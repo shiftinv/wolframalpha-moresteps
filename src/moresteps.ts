@@ -1,16 +1,24 @@
-const baseUrl = 'https://api.wolframalpha.com/v2/query';
-let appid: string;
-
-
 async function callBackground
 <T extends keyof BackgroundCommand>(command: T, params: {}): Promise<BackgroundCommand[T]> {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
             { backgroundCommand: command, ...params },
             (res) => {
+                if (res === undefined) {
+                    reject(`Error: ${chrome.runtime.lastError!.message}`);
+                    return;
+                }
+
                 const [response, err] = res;
-                if (err) reject(err);
-                else resolve(response);
+                if (err) {
+                    if (typeof err === 'object' && typeof err.message === 'string') {
+                        reject(Object.assign(new Error(), err));
+                    } else {
+                        reject(err);
+                    }
+                } else {
+                    resolve(response);
+                }
             });
     });
 }
@@ -23,16 +31,14 @@ async function getStepByStepImageUrl(query: string, podID: string) {
     }
 
     // build API request
-    const url = new URL(baseUrl);
-    url.search = new URLSearchParams({
-        appid: appid,
+    const params = {
         input: query,
         podstate: `${podID}__Step-by-step solution`,
         format: 'image'
-    }).toString();
+    };
 
     // retrieve image url from xml response
-    const text = await callBackground('fetch', { input: url });
+    const text = await callBackground('fetchAPI', { params: params });
     const xml = (new DOMParser()).parseFromString(text, 'text/xml');
     const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title~="steps"] img`);
     if (!stepsImg) {
@@ -131,14 +137,12 @@ function setupImageUrlRequestHandler() {
         if (event.source !== window) return;
         if (event.data.type !== 'msImageUrlReq') return;
 
+        // get new image url
         let imageUrl = null;
-        if (appid) {
-            // get new image url
-            try {
-                imageUrl = await getStepByStepImageUrl(event.data.query, event.data.podID);
-            } catch (err) {
-                console.error(err);
-            }
+        try {
+            imageUrl = await getStepByStepImageUrl(event.data.query, event.data.podID);
+        } catch (err) {
+            console.error(err);
         }
         // send response with (new) url
         window.postMessage({ seq: event.data.seq, type: 'msImageUrlResp', url: imageUrl }, '*');
@@ -146,22 +150,13 @@ function setupImageUrlRequestHandler() {
 }
 
 
-// retrieve app ID from storage, initialize DOM observer
-getWAAppID()
-    .then((id) => {
-        appid = id;
-        if (appid) {
-            console.info('Initializing Wolfram|Alpha MoreSteps');
-            if (document.readyState !== 'loading') {
-                setupObserver();
-            } else {
-                document.addEventListener('DOMContentLoaded', setupObserver);
-            }
-        } else {
-            console.warn('Can\'t initialize, no app ID set');
-        }
-    })
-    .catch(console.error);
+// initialize DOM observer
+console.info('Initializing Wolfram|Alpha MoreSteps');
+if (document.readyState !== 'loading') {
+    setupObserver();
+} else {
+    document.addEventListener('DOMContentLoaded', setupObserver);
+}
 
 
 // initialize handler for messages from page script
