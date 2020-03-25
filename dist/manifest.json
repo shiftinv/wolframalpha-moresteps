@@ -1,0 +1,28 @@
+{
+    "background": {
+        "scripts": ["js/storage.js", "js/background.js"]
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://*.wolframalpha.com/*",
+                "https://*.wolframalpha.com/*",
+                "http://*.wolfram.com/*",
+                "https://*.wolfram.com/*"
+            ],
+            "js": ["js/storage.js", "js/moresteps.js"],
+            "run_at": "document_start"
+        }
+    ],
+    "web_accessible_resources": ["js/inject.js"],
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
+    "browser_action": {
+        "default_title": "Wolfram|Alpha MoreSteps"
+    },
+    "manifest_version": 2,
+    "name": "Wolfram|Alpha MoreSteps",
+    "version": "0.1"
+}
