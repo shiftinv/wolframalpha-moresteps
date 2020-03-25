@@ -1,32 +1,18 @@
+type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
+
 // tslint:disable-next-line: function-name
-function MessageEventRW(o: MessageEvent & { [key: string]: any }): MessageEvent {
-    const newobj: any = {};
-    newobj.bubbles = o.bubbles || false;
-    newobj.cancelBubble = o.cancelBubble || false;
-    newobj.cancelable = o.cancelable || false;
-    newobj.currentTarget = o.currentTarget || null;
-    newobj.data = o.data || null;
-    newobj.defaultPrevented = o.defaultPrevented || false;
-    newobj.eventPhase = o.eventPhase || 0;
-    newobj.lastEventId = o.lastEventId || '';
-    newobj.origin = o.origin || '';
-    newobj.path = o.path || [];
-    newobj.ports = o.parts || [];
-    newobj.returnValue = o.returnValue || true;
-    newobj.source = o.source || null;
-    newobj.srcElement = o.srcElement || null;
-    newobj.target = o.target || null;
-    newobj.timeStamp = o.timeStamp || null;
-    newobj.type = o.type || 'message';
-    newobj.__proto__ = o.__proto__ || (MessageEvent as any).__proto__;
-    return newobj;
+function fixMessageEventData(o: MessageEvent): MessageEventRW {
+    const tmpData = o.data;
+    Object.defineProperty(o, 'data', { writable: true });
+    (o as MessageEventRW).data = tmpData;
+    return o;
 }
 
 
 let sequence = 0;
 const imageUrlCallbacks: { [key: number]: (url: string) => void } = {};
 
-function websocketMessageEventHook(event: MessageEvent, continueSocket: () => {}) {
+function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => {}) {
     let obj: any;
     try {
         obj = JSON.parse(event.data);
@@ -42,7 +28,7 @@ function websocketMessageEventHook(event: MessageEvent, continueSocket: () => {}
     imageUrlCallbacks[seq] = (url) => {
         if (url) {
             obj.pod.subpods[0].img.src = url;
-            (event as any).data = JSON.stringify(obj);
+            event.data = JSON.stringify(obj);
         }
         continueSocket();
     };
@@ -62,10 +48,9 @@ function setupWebsocketHook() {
             let newListener = listener;
             if (type === 'message') {
                 // hook listener
-                console.log('hooking listener');
                 const origListener = listener;
                 newListener = (event, ...args2) => {
-                    const newEvent = MessageEventRW(event);
+                    const newEvent = fixMessageEventData(event);
                     const continueSocket = origListener.bind(this, newEvent, ...args2);
 
                     // returns false if event will be handled asynchronously
