@@ -34,7 +34,7 @@ async function getStepByStepImageUrl(query: string, podID: string) {
     // retrieve image url from xml response
     const text = await callBackground('fetch', { input: url });
     const xml = (new DOMParser()).parseFromString(text, 'text/xml');
-    const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title*="steps"] img`);
+    const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title~="steps"] img`);
     if (!stepsImg) {
         throw new Error('Couldn\'t find step-by-step subpod image in API response');
     }
