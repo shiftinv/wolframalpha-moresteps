@@ -1,3 +1,3 @@
 type BackgroundCommand = {
-    'fetchStepsAPI': ({ query, podID } : { query: string, podID: string }) => object
+    'fetchStepsAPI': ({ query, podID } : { query: string, podID: string }) => any
 }

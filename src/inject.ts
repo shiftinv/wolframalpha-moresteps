@@ -12,7 +12,7 @@ function fixMessageEventData(o: MessageEvent): MessageEventRW {
 let sequence = 0;
 const imageDataCallbacks: { [key: number]: (data: any) => void } = {};
 
-function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => {}) {
+function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => any) {
     let obj: any;
     try {
         obj = JSON.parse(event.data);

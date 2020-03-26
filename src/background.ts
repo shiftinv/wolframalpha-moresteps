@@ -3,7 +3,7 @@ type RespType<T extends keyof BackgroundCommand>
     = [ReturnType<BackgroundCommand[T]> | null, Error | null];
 
 const baseUrl = 'https://api.wolframalpha.com/v2/query';
-const apiCache: { [key: string]: object } = {};
+const apiCache: { [key: string]: any } = {};
 
 // fix Error serialization
 if (!('toJSON' in Error.prototype)) {

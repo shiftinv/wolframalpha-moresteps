@@ -121,6 +121,7 @@ function setupImageDataRequestHandler() {
         } catch (err) {
             console.error(err);
         }
+
         // send response with (new) data
         window.postMessage(
             {
