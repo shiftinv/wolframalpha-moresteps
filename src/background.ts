@@ -67,12 +67,11 @@ class Messaging {
             .then(async (id) => {
                 if (!id) throw new Error('No app ID set');
 
-                console.debug(`Retrieving data for query \'${data.query}\'`);
+                console.debug(`Retrieving data for query \'${data.query}\' (podID: \'${data.podID}\')`);
                 const img = await APIClient.getStepByStepImageDataFromAPI(
                     id, data.query, data.podID
                 );
-                console.debug(
-                    `Received data for query: \'${data.query}\':\n${JSON.stringify(img)}`
+                console.debug(`Received data for query: \'${data.query}\' (podID: \'${data.podID}\'):\n${JSON.stringify(img)}`
                 );
                 return img;
             })

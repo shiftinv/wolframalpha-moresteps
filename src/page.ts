@@ -25,6 +25,8 @@ class WebsocketHook {
         if ('deploybuttonstates' in obj.pod
             || 'stepbystepcontenttype' in obj.pod.subpods[0]) return true;
 
+        console.info(`got packet:\n${JSON.stringify(obj)}`);
+
         // request image data from content script
         Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
             .then((imageData) => {
@@ -47,7 +49,7 @@ class WebsocketHook {
     }
 
     static init() {
-        console.log('Initializing websocket hook');
+        console.info('Initializing websocket hook');
         const origAddEventListener = window.WebSocket.prototype.addEventListener;
         window.WebSocket.prototype.addEventListener =
             function (type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]) {
@@ -64,6 +66,7 @@ class WebsocketHook {
                             continueSocket();
                         }
                     };
+                    console.info('hooked websocket listener');
                 }
                 return origAddEventListener.apply(this, [type, newListener, ...args] as any);
             };
@@ -104,6 +107,8 @@ class Observer {
     private static fixSectionForDiv(div: Element) {
         const img = div.querySelector('img[src*="Calculate/MSP"]') as HTMLImageElement;
         if (!img || !WebsocketHook.newImages.has(img.src)) return;
+
+        console.info('found div with image');
 
         // remove pro footer
         for (const child of div.parentElement!.children) {
