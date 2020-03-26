@@ -1,15 +1,15 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
 
+let sequence = 0;
+const imageDataCallbacks: { [key: number]: (data: any) => void } = {};
+
+
 function fixMessageEventData(o: MessageEvent): MessageEventRW {
     const tmpData = o.data;
     Object.defineProperty(o, 'data', { writable: true });
     (o as MessageEventRW).data = tmpData;
     return o;
 }
-
-
-let sequence = 0;
-const imageDataCallbacks: { [key: number]: (data: any) => void } = {};
 
 function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => any) {
     let obj: any;
@@ -67,6 +67,7 @@ function setupWebsocketHook() {
             return origAddEventListener.apply(this, [type, newListener, ...args] as any);
         };
 }
+
 
 function setupImageDataResponseHandler() {
     window.addEventListener('message', (event) => {
@@ -162,13 +163,13 @@ function setupObserver() {
 }
 
 
+console.info('Initializing Wolfram|Alpha MoreSteps');
+
 // initialize websocket hook
 setupImageDataResponseHandler();
 setupWebsocketHook();
 
-
 // initialize DOM observer
-console.info('Initializing Wolfram|Alpha MoreSteps');
 if (document.readyState !== 'loading') {
     setupObserver();
 } else {

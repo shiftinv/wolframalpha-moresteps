@@ -1,19 +1,6 @@
 const baseUrl = 'https://api.wolframalpha.com/v2/query';
 const apiCache: { [key: string]: any } = {};
 
-// fix Error serialization
-if (!('toJSON' in Error.prototype)) {
-    Object.defineProperty(Error.prototype, 'toJSON', {
-        value: function () {
-            const alt: any = {};
-            Object.getOwnPropertyNames(this).forEach(n => alt[n] = this[n]);
-            return alt;
-        },
-        configurable: true,
-        writable: true
-    });
-}
-
 
 function findStepsImg(json: any, podID: string) {
     let img: any;
@@ -35,7 +22,6 @@ function findStepsImg(json: any, podID: string) {
     return img;
 }
 
-
 async function getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
         Promise<{ [key: string]: string | null }> {
     const url = new URL(baseUrl);
@@ -51,6 +37,20 @@ async function getStepByStepImageDataFromAPI(appid: string, query: string, podID
     const resultJson = (await response.json()).queryresult;
     const imgData = findStepsImg(resultJson, podID);
     return { ...imgData, host: resultJson.host };
+}
+
+
+// fix Error serialization
+if (!('toJSON' in Error.prototype)) {
+    Object.defineProperty(Error.prototype, 'toJSON', {
+        value: function () {
+            const alt: any = {};
+            Object.getOwnPropertyNames(this).forEach(n => alt[n] = this[n]);
+            return alt;
+        },
+        configurable: true,
+        writable: true
+    });
 }
 
 

@@ -10,7 +10,7 @@
                 "http://*.wolfram.com/*",
                 "https://*.wolfram.com/*"
             ],
-            "js": ["js/storage.js", "js/moresteps.js"],
+            "js": ["js/moresteps.js"],
             "run_at": "document_start"
         }
     ],
