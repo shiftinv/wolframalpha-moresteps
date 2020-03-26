@@ -19,41 +19,43 @@ class ExtStorage {
 }
 
 
-function findStepsImg(json: any, podID: string) {
-    let img: any;
-    for (const pod of json.pods) {
-        if (pod.id === podID) {
-            for (const subpod of pod.subpods) {
-                if (subpod.title.includes('steps') && 'img' in subpod) {
-                    img = subpod.img;
-                    break;
+class APIClient {
+    private static findStepsImg(json: any, podID: string) {
+        let img: any;
+        for (const pod of json.pods) {
+            if (pod.id === podID) {
+                for (const subpod of pod.subpods) {
+                    if (subpod.title.includes('steps') && 'img' in subpod) {
+                        img = subpod.img;
+                        break;
+                    }
                 }
             }
+            if (img) break;
         }
-        if (img) break;
+
+        if (!img) {
+            throw new Error('Couldn\'t find step-by-step subpod image in API response');
+        }
+        return img;
     }
 
-    if (!img) {
-        throw new Error('Couldn\'t find step-by-step subpod image in API response');
+    static async getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
+            Promise<{ [key: string]: string | null }> {
+        const url = new URL(baseUrl);
+        url.search = new URLSearchParams({
+            appid: appid,
+            input: query,
+            podstate: `${podID}__Step-by-step solution`,
+            format: 'image',
+            output: 'json'
+        }).toString();
+
+        const response = await fetch(url.toString());
+        const resultJson = (await response.json()).queryresult;
+        const imgData = this.findStepsImg(resultJson, podID);
+        return { ...imgData, host: resultJson.host };
     }
-    return img;
-}
-
-async function getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
-        Promise<{ [key: string]: string | null }> {
-    const url = new URL(baseUrl);
-    url.search = new URLSearchParams({
-        appid: appid,
-        input: query,
-        podstate: `${podID}__Step-by-step solution`,
-        format: 'image',
-        output: 'json'
-    }).toString();
-
-    const response = await fetch(url.toString());
-    const resultJson = (await response.json()).queryresult;
-    const imgData = findStepsImg(resultJson, podID);
-    return { ...imgData, host: resultJson.host };
 }
 
 
@@ -86,7 +88,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (
                 return apiCache[data.query];
             }
             console.debug(`Retrieving data for query \'${data.query}\'`);
-            const img = await getStepByStepImageDataFromAPI(id, data.query, data.podID);
+            const img = await APIClient.getStepByStepImageDataFromAPI(id, data.query, data.podID);
             apiCache[data.query] = img;
             console.debug(`Stored data for query \'${data.query}\' in cache`);
             return img;

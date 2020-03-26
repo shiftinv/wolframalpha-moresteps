@@ -11,7 +11,8 @@
     "trailing-comma": false,
     "object-literal-shorthand": false,
     "no-increment-decrement": false,
-    "no-console": false
+    "no-console": false,
+    "max-classes-per-file": false
   },
   "linterOptions": {
     "exclude": [

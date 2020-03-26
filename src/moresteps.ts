@@ -1,4 +1,5 @@
 async function backgroundFetchSteps(query: string, podID: string): Promise<any> {
+    // request image data from background script
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
             { fetchSteps: { query: query, podID: podID } },
@@ -38,11 +39,7 @@ function setupImageDataRequestHandler() {
 
         // send response with (new) data
         window.postMessage(
-            {
-                seq: event.data.seq,
-                type: 'msImageDataResp',
-                imageData: imageData
-            },
+            { seq: event.data.seq, type: 'msImageDataResp', imageData: imageData },
             '*'
         );
     });
