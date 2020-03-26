@@ -1,10 +1,7 @@
-async function callBackground<T extends keyof BackgroundCommand>(
-    command: T,
-    params: Parameters<BackgroundCommand[T]>[0]
-): Promise<ReturnType<BackgroundCommand[T]>> {
+async function backgroundFetchSteps(query: string, podID: string): Promise<any> {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
-            { backgroundCommand: command, ...params },
+            { fetchSteps: { query: query, podID: podID } },
             (res) => {
                 if (res === undefined) {
                     reject(`Error: ${chrome.runtime.lastError!.message}`);
@@ -34,10 +31,7 @@ function setupImageDataRequestHandler() {
         // get new image data
         let imageData = null;
         try {
-            imageData = await callBackground('fetchStepsAPI', {
-                query: event.data.query,
-                podID: event.data.podID
-            });
+            imageData = await backgroundFetchSteps(event.data.query, event.data.podID);
         } catch (err) {
             console.error(err);
         }

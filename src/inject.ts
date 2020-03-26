@@ -1,6 +1,5 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
 
-// tslint:disable-next-line: function-name
 function fixMessageEventData(o: MessageEvent): MessageEventRW {
     const tmpData = o.data;
     Object.defineProperty(o, 'data', { writable: true });

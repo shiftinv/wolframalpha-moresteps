@@ -1,7 +1,3 @@
-type MessageType<T> = { backgroundCommand?: T, [key: string]: any };
-type RespType<T extends keyof BackgroundCommand>
-    = [ReturnType<BackgroundCommand[T]> | null, Error | null];
-
 const baseUrl = 'https://api.wolframalpha.com/v2/query';
 const apiCache: { [key: string]: any } = {};
 
@@ -59,36 +55,28 @@ async function getStepByStepImageDataFromAPI(appid: string, query: string, podID
 
 
 // set up listener for content script
-chrome.runtime.onMessage.addListener(<T extends keyof BackgroundCommand>(
-    message: MessageType<T>,
-    sender: any,
-    sendResponse: <K extends keyof BackgroundCommand>(r: RespType<K>) => void
-): boolean | void => {
-    if (!message.backgroundCommand) return;
+chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (r: any) => void):
+        boolean | void => {
+    if (!message.fetchSteps) return;
+    const data = message.fetchSteps;
 
-    // https://github.com/microsoft/TypeScript/issues/31904 :(
-    switch (message.backgroundCommand) {
-    case 'fetchStepsAPI':
-        getWAAppID()
-            .then(async (id) => {
-                if (!id) throw new Error('No app ID set');
+    getWAAppID()
+        .then(async (id) => {
+            if (!id) throw new Error('No app ID set');
 
-                if (message.query in apiCache) {
-                    console.debug(`Found data for query \'${message.query}\' in cache`);
-                    return apiCache[message.query];
-                }
-                console.debug(`Retrieving data for query \'${message.query}\'`);
-                const img = await getStepByStepImageDataFromAPI(id, message.query, message.podID);
-                apiCache[message.query] = img;
-                console.debug(`Stored data for query \'${message.query}\' in cache`);
-                return img;
-            })
-            .then(img => sendResponse<'fetchStepsAPI'>([img, null]))
-            .catch(err => sendResponse<'fetchStepsAPI'>([null, err]));
-        return true;
-    default:
-        throw new Error(`Unknown command ${message.backgroundCommand}`);
-    }
+            if (data.query in apiCache) {
+                console.debug(`Found data for query \'${data.query}\' in cache`);
+                return apiCache[data.query];
+            }
+            console.debug(`Retrieving data for query \'${data.query}\'`);
+            const img = await getStepByStepImageDataFromAPI(id, data.query, data.podID);
+            apiCache[data.query] = img;
+            console.debug(`Stored data for query \'${data.query}\' in cache`);
+            return img;
+        })
+        .then(img => sendResponse([img, null]))
+        .catch(err => sendResponse([null, err]));
+    return true;
 });
 
 
