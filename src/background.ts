@@ -1,5 +1,3 @@
-const apiCache: { [key: string]: any } = {};
-
 class ExtStorage {
     private static readonly storage = chrome.storage.sync;
     private static readonly STORAGE_APPID_KEY = 'appid';
@@ -69,16 +67,13 @@ class Messaging {
             .then(async (id) => {
                 if (!id) throw new Error('No app ID set');
 
-                if (data.query in apiCache) {
-                    console.debug(`Found data for query \'${data.query}\' in cache`);
-                    return apiCache[data.query];
-                }
                 console.debug(`Retrieving data for query \'${data.query}\'`);
                 const img = await APIClient.getStepByStepImageDataFromAPI(
                     id, data.query, data.podID
                 );
-                apiCache[data.query] = img;
-                console.debug(`Stored data for query \'${data.query}\' in cache`);
+                console.debug(
+                    `Received data for query: \'${data.query}\':\n${JSON.stringify(img)}`
+                );
                 return img;
             })
             .then(img => sendResponse([img, null]))
