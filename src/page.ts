@@ -19,7 +19,11 @@ class WebsocketHook {
             return true;
         }
 
+        // handle stepByStep packets only
         if (obj.type !== 'stepByStep') return true;
+        // don't try to replace solutions with multiple steps
+        if ('deploybuttonstates' in obj.pod
+            || 'stepbystepcontenttype' in obj.pod.subpods[0]) return true;
 
         // request image data from content script
         Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
