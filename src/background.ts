@@ -19,6 +19,27 @@ if (!('toJSON' in Error.prototype)) {
 }
 
 
+function findStepsImg(json: any, podID: string) {
+    let img: any;
+    for (const pod of json.queryresult.pods) {
+        if (pod.id === podID) {
+            for (const subpod of pod.subpods) {
+                if (subpod.title.includes('steps') && 'img' in subpod) {
+                    img = subpod.img;
+                    break;
+                }
+            }
+        }
+        if (img) break;
+    }
+
+    if (!img) {
+        throw new Error('Couldn\'t find step-by-step subpod image in API response');
+    }
+    return img;
+}
+
+
 async function getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
         Promise<{ [key: string]: string | null }> {
     const url = new URL(baseUrl);
@@ -26,24 +47,13 @@ async function getStepByStepImageDataFromAPI(appid: string, query: string, podID
         appid: appid,
         input: query,
         podstate: `${podID}__Step-by-step solution`,
-        format: 'image'
+        format: 'image',
+        output: 'json'
     }).toString();
 
     const response = await fetch(url.toString());
-    const text = await response.text();
-    const xml = (new DOMParser()).parseFromString(text, 'text/xml');
-    const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title~="steps"] img`);
-    if (!stepsImg) {
-        throw new Error('Couldn\'t find step-by-step subpod image in API response');
-    }
-
-    return [...stepsImg.attributes].reduce(
-        (attrs, a) => {
-            attrs[a.nodeName] = a.nodeValue;
-            return attrs;
-        },
-        {} as { [key: string]: string | null }
-    );
+    const json = await response.json();
+    return findStepsImg(json, podID);
 }
 
 
