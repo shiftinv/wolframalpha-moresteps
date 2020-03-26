@@ -58,45 +58,51 @@ class APIClient {
     }
 }
 
+class Messaging {
+    private static contentMessageHandler(message: any, sender: any, sendResponse: (r: any) => void):
+            boolean | void {
+        if (!message.fetchSteps) return;
+        const data = message.fetchSteps;
 
-// fix Error serialization
-if (!('toJSON' in Error.prototype)) {
-    Object.defineProperty(Error.prototype, 'toJSON', {
-        value: function () {
-            const alt: any = {};
-            Object.getOwnPropertyNames(this).forEach(n => alt[n] = this[n]);
-            return alt;
-        },
-        configurable: true,
-        writable: true
-    });
+        ExtStorage.getWAAppID()
+            .then(async (id) => {
+                if (!id) throw new Error('No app ID set');
+
+                if (data.query in apiCache) {
+                    console.debug(`Found data for query \'${data.query}\' in cache`);
+                    return apiCache[data.query];
+                }
+                console.debug(`Retrieving data for query \'${data.query}\'`);
+                const img = await APIClient.getStepByStepImageDataFromAPI(
+                    id, data.query, data.podID
+                );
+                apiCache[data.query] = img;
+                console.debug(`Stored data for query \'${data.query}\' in cache`);
+                return img;
+            })
+            .then(img => sendResponse([img, null]))
+            .catch(err => sendResponse([null, err]));
+        return true;
+    }
+
+    static init() {
+        // fix Error serialization
+        if (!('toJSON' in Error.prototype)) {
+            Object.defineProperty(Error.prototype, 'toJSON', {
+                value: function () {
+                    const alt: any = {};
+                    Object.getOwnPropertyNames(this).forEach(n => alt[n] = this[n]);
+                    return alt;
+                },
+                configurable: true,
+                writable: true
+            });
+        }
+
+        // set up listener for content script
+        chrome.runtime.onMessage.addListener(this.contentMessageHandler.bind(this));
+    }
 }
-
-
-// set up listener for content script
-chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (r: any) => void):
-        boolean | void => {
-    if (!message.fetchSteps) return;
-    const data = message.fetchSteps;
-
-    ExtStorage.getWAAppID()
-        .then(async (id) => {
-            if (!id) throw new Error('No app ID set');
-
-            if (data.query in apiCache) {
-                console.debug(`Found data for query \'${data.query}\' in cache`);
-                return apiCache[data.query];
-            }
-            console.debug(`Retrieving data for query \'${data.query}\'`);
-            const img = await APIClient.getStepByStepImageDataFromAPI(id, data.query, data.podID);
-            apiCache[data.query] = img;
-            console.debug(`Stored data for query \'${data.query}\' in cache`);
-            return img;
-        })
-        .then(img => sendResponse([img, null]))
-        .catch(err => sendResponse([null, err]));
-    return true;
-});
 
 
 // set up app ID prompt
@@ -108,3 +114,9 @@ chrome.browserAction.onClicked.addListener(async (tab) => {
     if (newAppID) await ExtStorage.setWAAppID(newAppID);
     else          alert('Invalid app ID');
 });
+
+
+Messaging.init();
+
+
+export {};

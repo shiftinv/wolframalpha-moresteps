@@ -174,8 +174,6 @@ class Observer {
 }
 
 
-console.info('Initializing Wolfram|Alpha MoreSteps');
-
 // initialize websocket hook
 Messaging.init();
 WebsocketHook.init();
@@ -186,3 +184,6 @@ if (document.readyState !== 'loading') {
 } else {
     document.addEventListener('DOMContentLoaded', () => Observer.init());
 }
+
+
+export {};
