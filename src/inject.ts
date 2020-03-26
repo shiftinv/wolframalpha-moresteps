@@ -27,10 +27,13 @@ function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => 
     const seq = sequence++;
     imageDataCallbacks[seq] = (imageData) => {
         if (imageData) {
+            obj.host = imageData.host;
+
             const wsImg = obj.pod.subpods[0].img;
             wsImg.src = imageData.src;
             wsImg.width = imageData.width;
             wsImg.height = imageData.height;
+
             event.data = JSON.stringify(obj);
         }
         continueSocket();

@@ -21,7 +21,7 @@ if (!('toJSON' in Error.prototype)) {
 
 function findStepsImg(json: any, podID: string) {
     let img: any;
-    for (const pod of json.queryresult.pods) {
+    for (const pod of json.pods) {
         if (pod.id === podID) {
             for (const subpod of pod.subpods) {
                 if (subpod.title.includes('steps') && 'img' in subpod) {
@@ -52,8 +52,9 @@ async function getStepByStepImageDataFromAPI(appid: string, query: string, podID
     }).toString();
 
     const response = await fetch(url.toString());
-    const json = await response.json();
-    return findStepsImg(json, podID);
+    const resultJson = (await response.json()).queryresult;
+    const imgData = findStepsImg(resultJson, podID);
+    return { ...imgData, host: resultJson.host };
 }
 
 
