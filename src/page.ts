@@ -1,6 +1,8 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
 
 class WebsocketHook {
+    static newImages = new Set<string>();
+
     private static fixMessageEventData(o: MessageEvent): MessageEventRW {
         const tmpData = o.data;
         Object.defineProperty(o, 'data', { writable: true });
@@ -31,6 +33,8 @@ class WebsocketHook {
                     wsImg.height = imageData.height;
 
                     event.data = JSON.stringify(obj);
+
+                    this.newImages.add(wsImg.src);
                 }
                 continueSocket();
             });
@@ -93,13 +97,31 @@ class Messaging {
 
 
 class Observer {
-    private static observerCallback(el: Element) {
-        function checkSBS(e: Element) {
-            // check if node is step-by-step block based on presence of a header image in parent
-            return !!e.querySelector('img[alt="SBS_HEADER"]');
+    private static fixSectionForDiv(div: Element) {
+        const img = div.querySelector('img[src*="Calculate/MSP"]') as HTMLImageElement;
+        if (!img || !WebsocketHook.newImages.has(img.src)) return;
+
+        // remove pro footer
+        for (const child of div.parentElement!.children) {
+            if (child.nodeName.toLowerCase() === 'section'
+                    && child.querySelector('a[href*="/pro/"]')) {
+                child.remove();
+            }
         }
 
-        // layout:
+        // replace div with new image
+        img.className = div.className;
+        img.style.margin = '20px';
+        div.replaceWith(img);
+    }
+
+    private static observerCallback(el: Element) {
+        const isStepByStep = (e: Element) => {
+            // check if node is step-by-step block based on presence of a header image in parent
+            return !!e.querySelector('img[alt="SBS_HEADER"]');
+        };
+
+        // container layout:
         //   <section>      [1]
         //     <header />
         //     <section />
@@ -110,43 +132,22 @@ class Observer {
         //
         // handle two separate situations:
         //  1. step-by-step solution was opened before image was loaded:
-        //    - div(2) and section(3) are added separately
+        //    - div(2) is added separately
         //  2. step-by-step solution was opened after image was loaded:
-        //    - a new section(1) containing both div(2) and section(3) is added
+        //    - a new section(1) containing the div(2) is added
 
         switch (el.nodeName.toLowerCase()) {
         case 'section':
-            if (checkSBS(el)) {
-                // if node itself is the SBS section, call function again with every child
-                let hasDiv = false;
-                for (const child of el.children) {
-                    if (child.nodeName.toLowerCase() === 'div') {
-                        hasDiv = true;
-                        break;
-                    }
-                }
-                if (hasDiv) {
-                    for (const child of el.children) {
-                        this.observerCallback(child);
-                    }
-                }
-            } else {
-                // remove section if it's the pro footer
-                if (!el.querySelector('a[href*="/pro/"]')) break;
-                if (!checkSBS(el.parentElement!)) break;
-                el.remove();
-            }
+            // if node itself is the SBS section, call function on the div children
+            if (!isStepByStep(el)) break;
+            [...el.children]
+                .filter(c => c.nodeName.toLowerCase() === 'div')
+                .forEach(c => this.fixSectionForDiv(c));
             break;
 
         case 'div':
-            // replace div containing the original step-by-step image with the image itself
-            if (!checkSBS(el.parentElement!)) break;
-            const img = el.querySelector('img[src*="Calculate/MSP"]') as HTMLImageElement;
-            if (!img) break;
-
-            img.className = el.className;
-            img.style.margin = '20px';
-            el.replaceWith(img);
+            if (!isStepByStep(el.parentElement!)) break;
+            this.fixSectionForDiv(el);
             break;
         }
     }
