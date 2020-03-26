@@ -10,11 +10,11 @@
                 "http://*.wolfram.com/*",
                 "https://*.wolfram.com/*"
             ],
-            "js": ["js/moresteps.js"],
+            "js": ["js/content.js"],
             "run_at": "document_start"
         }
     ],
-    "web_accessible_resources": ["js/inject.js"],
+    "web_accessible_resources": ["js/page.js"],
     "permissions": [
         "storage",
         "activeTab"

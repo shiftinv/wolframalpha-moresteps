@@ -55,7 +55,7 @@ Messaging.init();
 
 // add page script to DOM
 const script = document.createElement('script');
-script.src = chrome.runtime.getURL('js/inject.js');
+script.src = chrome.runtime.getURL('js/page.js');
 script.onload = () => script.remove();
 (document.head || document.documentElement).appendChild(script);
 
