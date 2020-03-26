@@ -1,6 +1,6 @@
 {
     "background": {
-        "scripts": ["js/storage.js", "js/background.js"]
+        "scripts": ["js/background.js"]
     },
     "content_scripts": [
         {

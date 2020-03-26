@@ -1,6 +1,23 @@
 const baseUrl = 'https://api.wolframalpha.com/v2/query';
 const apiCache: { [key: string]: any } = {};
 
+class ExtStorage {
+    private static readonly storage = chrome.storage.sync;
+    private static readonly STORAGE_APPID_KEY = 'appid';
+
+    static async getWAAppID(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            this.storage.get(this.STORAGE_APPID_KEY, data => resolve(data[this.STORAGE_APPID_KEY]));
+        });
+    }
+
+    static async setWAAppID(id: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.storage.set({ [this.STORAGE_APPID_KEY]: id }, resolve);
+        });
+    }
+}
+
 
 function findStepsImg(json: any, podID: string) {
     let img: any;
@@ -60,7 +77,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (
     if (!message.fetchSteps) return;
     const data = message.fetchSteps;
 
-    getWAAppID()
+    ExtStorage.getWAAppID()
         .then(async (id) => {
             if (!id) throw new Error('No app ID set');
 
@@ -82,10 +99,10 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: (
 
 // set up app ID prompt
 chrome.browserAction.onClicked.addListener(async (tab) => {
-    const oldAppID = await getWAAppID();
+    const oldAppID = await ExtStorage.getWAAppID();
     const newAppID = prompt('Enter your Wolfram|Alpha app ID:', oldAppID);
     if (newAppID === null) return;  // 'cancel' selected
 
-    if (newAppID) await setWAAppID(newAppID);
+    if (newAppID) await ExtStorage.setWAAppID(newAppID);
     else          alert('Invalid app ID');
 });
