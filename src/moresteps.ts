@@ -39,7 +39,7 @@ function setupImageDataRequestHandler() {
 
         // send response with (new) data
         window.postMessage(
-            { seq: event.data.seq, type: 'msImageDataResp', imageData: imageData },
+            { seq: event.data.seq, type: 'msImageDataResp', data: imageData },
             '*'
         );
     });

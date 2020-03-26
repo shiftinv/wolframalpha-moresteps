@@ -1,9 +1,6 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
 
 class WebsocketHook {
-    private static sequence = 0;
-    private static imageDataCallbacks: { [key: number]: (data: any) => void } = {};
-
     private static fixMessageEventData(o: MessageEvent): MessageEventRW {
         const tmpData = o.data;
         Object.defineProperty(o, 'data', { writable: true });
@@ -23,24 +20,20 @@ class WebsocketHook {
         if (obj.type !== 'stepByStep') return true;
 
         // request image data from content script
-        const seq = this.sequence++;
-        this.imageDataCallbacks[seq] = (imageData) => {
-            if (imageData) {
-                obj.host = imageData.host;
+        Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
+            .then((imageData) => {
+                if (imageData) {
+                    obj.host = imageData.host;
 
-                const wsImg = obj.pod.subpods[0].img;
-                wsImg.src = imageData.src;
-                wsImg.width = imageData.width;
-                wsImg.height = imageData.height;
+                    const wsImg = obj.pod.subpods[0].img;
+                    wsImg.src = imageData.src;
+                    wsImg.width = imageData.width;
+                    wsImg.height = imageData.height;
 
-                event.data = JSON.stringify(obj);
-            }
-            continueSocket();
-        };
-        window.postMessage(
-            { seq: seq, type: 'msImageDataReq', query: obj.query, podID: obj.pod.id },
-            '*'
-        );
+                    event.data = JSON.stringify(obj);
+                }
+                continueSocket();
+            });
 
         return false;
     }
@@ -67,24 +60,35 @@ class WebsocketHook {
                 return origAddEventListener.apply(this, [type, newListener, ...args] as any);
             };
     }
-
-    static handleContentResponse(seq: number, data: any) {
-        const handler = this.imageDataCallbacks[seq];
-        if (handler) {
-            handler(data);
-            delete this.imageDataCallbacks[seq];
-        }
-    }
 }
 
 
-function setupImageDataResponseHandler() {
-    window.addEventListener('message', (event) => {
-        if (event.source !== window) return;
-        if (event.data.type !== 'msImageDataResp') return;
+class Messaging {
+    private static sequence = 0;
+    private static dataCallbacks: { [key: number]: (data: any) => void } = {};
 
-        WebsocketHook.handleContentResponse(event.data.seq, event.data.imageData);
-    });
+    static init() {
+        window.addEventListener('message', (event) => {
+            if (event.source !== window) return;
+            if (event.data.type !== 'msImageDataResp') return;
+
+            const handler = this.dataCallbacks[event.data.seq];
+            if (handler) {
+                handler(event.data.data);
+                delete this.dataCallbacks[event.data.seq];
+            }
+        });
+    }
+
+    static async sendMessage(data: { [key: string]: any }): Promise<any> {
+        const seq = this.sequence++;
+        const promise = new Promise(resolve => this.dataCallbacks[seq] = resolve);
+        window.postMessage(
+            { seq: seq, ...data },
+            '*'
+        );
+        return promise;
+    }
 }
 
 
@@ -173,7 +177,7 @@ class Observer {
 console.info('Initializing Wolfram|Alpha MoreSteps');
 
 // initialize websocket hook
-setupImageDataResponseHandler();
+Messaging.init();
 WebsocketHook.init();
 
 // initialize DOM observer
