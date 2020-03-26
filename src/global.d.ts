@@ -1,5 +1,3 @@
 type BackgroundCommand = {
-    'urlCacheGet': string,
-    'urlCacheSet': null,
-    'fetchAPI': string
+    'fetchStepsAPI': ({ query, podID } : { query: string, podID: string }) => object
 }

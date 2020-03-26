@@ -10,7 +10,7 @@ function fixMessageEventData(o: MessageEvent): MessageEventRW {
 
 
 let sequence = 0;
-const imageUrlCallbacks: { [key: number]: (url: string) => void } = {};
+const imageDataCallbacks: { [key: number]: (data: any) => void } = {};
 
 function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => {}) {
     let obj: any;
@@ -23,17 +23,20 @@ function websocketMessageEventHook(event: MessageEventRW, continueSocket: () => 
 
     if (obj.type !== 'stepByStep') return true;
 
-    // request image url from content script
+    // request image data from content script
     const seq = sequence++;
-    imageUrlCallbacks[seq] = (url) => {
-        if (url) {
-            obj.pod.subpods[0].img.src = url;
+    imageDataCallbacks[seq] = (imageData) => {
+        if (imageData) {
+            const wsImg = obj.pod.subpods[0].img;
+            wsImg.src = imageData.src;
+            wsImg.width = imageData.width;
+            wsImg.height = imageData.height;
             event.data = JSON.stringify(obj);
         }
         continueSocket();
     };
     window.postMessage(
-        { seq: seq, type: 'msImageUrlReq', query: obj.query, podID: obj.pod.id },
+        { seq: seq, type: 'msImageDataReq', query: obj.query, podID: obj.pod.id },
         '*'
     );
 
@@ -63,19 +66,19 @@ function setupWebsocketHook() {
         };
 }
 
-function setupImageUrlResponseHandler() {
+function setupImageDataResponseHandler() {
     window.addEventListener('message', (event) => {
         if (event.source !== window) return;
-        if (event.data.type !== 'msImageUrlResp') return;
+        if (event.data.type !== 'msImageDataResp') return;
 
-        const handler = imageUrlCallbacks[event.data.seq];
+        const handler = imageDataCallbacks[event.data.seq];
         if (handler) {
-            handler(event.data.url);
-            delete imageUrlCallbacks[event.data.seq];
+            handler(event.data.imageData);
+            delete imageDataCallbacks[event.data.seq];
         }
     });
 }
 
 
-setupImageUrlResponseHandler();
+setupImageDataResponseHandler();
 setupWebsocketHook();

@@ -1,5 +1,7 @@
-async function callBackground
-<T extends keyof BackgroundCommand>(command: T, params: {}): Promise<BackgroundCommand[T]> {
+async function callBackground<T extends keyof BackgroundCommand>(
+    command: T,
+    params: Parameters<BackgroundCommand[T]>[0]
+): Promise<ReturnType<BackgroundCommand[T]>> {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
             { backgroundCommand: command, ...params },
@@ -21,34 +23,6 @@ async function callBackground
                 }
             });
     });
-}
-
-async function getStepByStepImageUrl(query: string, podID: string) {
-    const cachedUrl = await callBackground('urlCacheGet', { query: query });
-    if (cachedUrl) {
-        console.debug(`Found url for query \'${query}\' in cache`);
-        return cachedUrl;
-    }
-
-    // build API request
-    const params = {
-        input: query,
-        podstate: `${podID}__Step-by-step solution`,
-        format: 'image'
-    };
-
-    // retrieve image url from xml response
-    const text = await callBackground('fetchAPI', { params: params });
-    const xml = (new DOMParser()).parseFromString(text, 'text/xml');
-    const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title~="steps"] img`);
-    if (!stepsImg) {
-        throw new Error('Couldn\'t find step-by-step subpod image in API response');
-    }
-
-    // add to cache
-    const imgUrl = stepsImg.getAttribute('src');
-    callBackground('urlCacheSet', { query: query, url: imgUrl });
-    return imgUrl;
 }
 
 function observerCallback(el: Element) {
@@ -131,21 +105,31 @@ function setupObserver() {
 }
 
 
-function setupImageUrlRequestHandler() {
+function setupImageDataRequestHandler() {
     // handle requests from page script
     window.addEventListener('message', async (event) => {
         if (event.source !== window) return;
-        if (event.data.type !== 'msImageUrlReq') return;
+        if (event.data.type !== 'msImageDataReq') return;
 
-        // get new image url
-        let imageUrl = null;
+        // get new image data
+        let imageData = null;
         try {
-            imageUrl = await getStepByStepImageUrl(event.data.query, event.data.podID);
+            imageData = await callBackground('fetchStepsAPI', {
+                query: event.data.query,
+                podID: event.data.podID
+            });
         } catch (err) {
             console.error(err);
         }
-        // send response with (new) url
-        window.postMessage({ seq: event.data.seq, type: 'msImageUrlResp', url: imageUrl }, '*');
+        // send response with (new) data
+        window.postMessage(
+            {
+                seq: event.data.seq,
+                type: 'msImageDataResp',
+                imageData: imageData
+            },
+            '*'
+        );
     });
 }
 
@@ -160,7 +144,7 @@ if (document.readyState !== 'loading') {
 
 
 // initialize handler for messages from page script
-setupImageUrlRequestHandler();
+setupImageDataRequestHandler();
 
 // add page script to DOM
 const script = document.createElement('script');

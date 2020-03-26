@@ -1,8 +1,9 @@
 type MessageType<T> = { backgroundCommand?: T, [key: string]: any };
-type RespType<T extends keyof BackgroundCommand> = [BackgroundCommand[T] | null, Error | null];
+type RespType<T extends keyof BackgroundCommand>
+    = [ReturnType<BackgroundCommand[T]> | null, Error | null];
 
 const baseUrl = 'https://api.wolframalpha.com/v2/query';
-const urlCache: { [key: string]: string } = {};
+const apiCache: { [key: string]: object } = {};
 
 // fix Error serialization
 if (!('toJSON' in Error.prototype)) {
@@ -18,38 +19,61 @@ if (!('toJSON' in Error.prototype)) {
 }
 
 
+async function getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
+        Promise<{ [key: string]: string | null }> {
+    const url = new URL(baseUrl);
+    url.search = new URLSearchParams({
+        appid: appid,
+        input: query,
+        podstate: `${podID}__Step-by-step solution`,
+        format: 'image'
+    }).toString();
+
+    const response = await fetch(url.toString());
+    const text = await response.text();
+    const xml = (new DOMParser()).parseFromString(text, 'text/xml');
+    const stepsImg = xml.querySelector(`pod[id="${podID}"] subpod[title~="steps"] img`);
+    if (!stepsImg) {
+        throw new Error('Couldn\'t find step-by-step subpod image in API response');
+    }
+
+    return [...stepsImg.attributes].reduce(
+        (attrs, a) => {
+            attrs[a.nodeName] = a.nodeValue;
+            return attrs;
+        },
+        {} as { [key: string]: string | null }
+    );
+}
+
+
 // set up listener for content script
-chrome.runtime.onMessage.addListener(
-<T extends keyof BackgroundCommand>
-(message: MessageType<T>, sender: any,
- sendResponse: <K extends keyof BackgroundCommand>(r: RespType<K>) => void): boolean | void => {
+chrome.runtime.onMessage.addListener(<T extends keyof BackgroundCommand>(
+    message: MessageType<T>,
+    sender: any,
+    sendResponse: <K extends keyof BackgroundCommand>(r: RespType<K>) => void
+): boolean | void => {
     if (!message.backgroundCommand) return;
 
     // https://github.com/microsoft/TypeScript/issues/31904 :(
     switch (message.backgroundCommand) {
-    case 'urlCacheGet':
-        sendResponse<'urlCacheGet'>([urlCache[message.query], null]);
-        return;
-    case 'urlCacheSet':
-        urlCache[message.query] = message.url;
-        sendResponse<'urlCacheSet'>([null, null]);
-        return;
-    case 'fetchAPI':
+    case 'fetchStepsAPI':
         getWAAppID()
-            .then((id) => {
+            .then(async (id) => {
                 if (!id) throw new Error('No app ID set');
 
-                const url = new URL(baseUrl);
-                url.search = new URLSearchParams({
-                    appid: id,
-                    ...message.params
-                }).toString();
-
-                return fetch(url.toString());
+                if (message.query in apiCache) {
+                    console.debug(`Found data for query \'${message.query}\' in cache`);
+                    return apiCache[message.query];
+                }
+                console.debug(`Retrieving data for query \'${message.query}\'`);
+                const img = await getStepByStepImageDataFromAPI(id, message.query, message.podID);
+                apiCache[message.query] = img;
+                console.debug(`Stored data for query \'${message.query}\' in cache`);
+                return img;
             })
-            .then(response => response.text())
-            .then(text => sendResponse<'fetchAPI'>([text, null]))
-            .catch(err => sendResponse<'fetchAPI'>([null, err]));
+            .then(img => sendResponse<'fetchStepsAPI'>([img, null]))
+            .catch(err => sendResponse<'fetchStepsAPI'>([null, err]));
         return true;
     default:
         throw new Error(`Unknown command ${message.backgroundCommand}`);
