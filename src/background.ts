@@ -1,4 +1,3 @@
-const baseUrl = 'https://api.wolframalpha.com/v2/query';
 const apiCache: { [key: string]: any } = {};
 
 class ExtStorage {
@@ -20,6 +19,8 @@ class ExtStorage {
 
 
 class APIClient {
+    private static baseUrl = 'https://api.wolframalpha.com/v2/query';
+
     private static findStepsImg(json: any, podID: string) {
         let img: any;
         for (const pod of json.pods) {
@@ -42,7 +43,7 @@ class APIClient {
 
     static async getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
             Promise<{ [key: string]: string | null }> {
-        const url = new URL(baseUrl);
+        const url = new URL(this.baseUrl);
         url.search = new URLSearchParams({
             appid: appid,
             input: query,
