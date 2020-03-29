@@ -1,8 +1,8 @@
 name: Build Chrome Extension
 on:
   push:
-    branches:
-      - release
+    tags:
+      - v*.*.*
 
 jobs:
   build:
@@ -11,13 +11,39 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
-          node-version: '12.x'
+          node-version: 12.x
 
       - run: npm install
       - run: npm run lint
       - run: npm run build
 
-      - uses: actions/upload-artifact@v2-preview
+      - run: cd dist && zip -r ../dist.zip .
+      - uses: actions/upload-artifact@v1
         with:
-          name: wolframalpha-moresteps
-          path: dist
+          name: dist-zip
+          path: ./dist.zip
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-release@v1
+        id: create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          prerelease: false
+          draft: true
+      - uses: actions/download-artifact@v1
+        with:
+          name: dist-zip
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_name: wolframalpha-moresteps.zip
+          asset_path: ./dist-zip/dist.zip
+          asset_content_type: application/zip
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
