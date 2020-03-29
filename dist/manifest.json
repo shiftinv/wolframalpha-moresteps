@@ -16,8 +16,7 @@
     ],
     "web_accessible_resources": ["js/page.js"],
     "permissions": [
-        "storage",
-        "activeTab"
+        "storage"
     ],
     "browser_action": {
         "default_title": "Wolfram|Alpha MoreSteps"
