@@ -125,9 +125,9 @@ class Observer {
     }
 
     private static observerCallback(el: Element) {
-        const isStepByStep = (e: Element) => {
-            // check if node is step-by-step block based on presence of a header image in parent
-            return !!e.querySelector('img[alt="SBS_HEADER"]');
+        const isStepByStep = (e: Element | null): boolean => {
+            // check if node is step-by-step block based on presence of a header image
+            return !!(e && e.querySelector('img[alt="SBS_HEADER"]'));
         };
 
         // container layout:
@@ -155,7 +155,7 @@ class Observer {
             break;
 
         case 'div':
-            if (!isStepByStep(el.parentElement!)) break;
+            if (!isStepByStep(el.parentElement)) break;
             this.fixSectionForDiv(el);
             break;
         }
