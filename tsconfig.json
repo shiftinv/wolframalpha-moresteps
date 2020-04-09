@@ -6,9 +6,15 @@
     "noEmitOnError": true,
     "strict": true,
     "strictNullChecks": true,
-    "removeComments": true
+    "removeComments": true,
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/web-ext-types"
+    ],
+    "allowJs": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.js"
   ]
 }

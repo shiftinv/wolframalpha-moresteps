@@ -4,7 +4,10 @@
     "description": "Automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the API",
     "version": "0.0.1.0",
     "background": {
-        "scripts": ["js/background.js"]
+        "scripts": [
+            "js/lib/webextension-polyfill@0.6.0.js",
+            "js/background.js"
+        ]
     },
     "content_scripts": [
         {
@@ -14,7 +17,10 @@
                 "http://*.wolfram.com/*",
                 "https://*.wolfram.com/*"
             ],
-            "js": ["js/content.js"],
+            "js": [
+                "js/lib/webextension-polyfill@0.6.0.js",
+                "js/content.js"
+            ],
             "run_at": "document_start"
         }
     ],
