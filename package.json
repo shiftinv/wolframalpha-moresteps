@@ -1,11 +1,12 @@
 {
   "name": "wolframalpha-moresteps",
   "scripts": {
-    "build": "tsc --build tsconfig.json",
+    "build": "tsc --build tsconfig.json && node scripts/build_target.js",
     "watch": "tsc --build tsconfig.json -w",
     "lint": "tslint --project tsconfig.json"
   },
   "devDependencies": {
+    "deepmerge": "^4.2.2",
     "tslint": "^6.1.0",
     "tslint-config-airbnb": "^5.11.2",
     "typescript": "^3.8.3",
