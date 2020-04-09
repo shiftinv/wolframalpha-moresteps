@@ -66,18 +66,6 @@ class Messaging {
     }
 }
 
-
-// set up app ID prompt
-browser.browserAction.onClicked.addListener(async (tab) => {
-    const oldAppID = await ExtStorage.getAppID();
-    const newAppID = prompt('Enter your Wolfram|Alpha app ID:', oldAppID);
-    if (newAppID === null) return;  // 'cancel' selected
-
-    if (newAppID) await ExtStorage.setAppID(newAppID);
-    else          alert('Invalid app ID');
-});
-
-
 Messaging.init();
 
 

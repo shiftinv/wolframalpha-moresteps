@@ -1,2 +1,3 @@
-dist
+dist/*
+!dist/*.html
 node_modules
