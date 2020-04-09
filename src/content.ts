@@ -1,27 +1,7 @@
 class Messaging {
     private static async backgroundFetchSteps(query: string, podID: string): Promise<any> {
         // request image data from background script
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(
-                { fetchSteps: { query: query, podID: podID } },
-                (res) => {
-                    if (res === undefined) {
-                        reject(`Error: ${chrome.runtime.lastError!.message}`);
-                        return;
-                    }
-
-                    const [response, err] = res;
-                    if (err) {
-                        if (typeof err === 'object' && typeof err.message === 'string') {
-                            reject(Object.assign(new Error(), err));
-                        } else {
-                            reject(err);
-                        }
-                    } else {
-                        resolve(response);
-                    }
-                });
-        });
+        return browser.runtime.sendMessage({ fetchSteps: { query: query, podID: podID } });
     }
 
     static init() {
@@ -55,7 +35,7 @@ Messaging.init();
 
 // add page script to DOM
 const script = document.createElement('script');
-script.src = chrome.runtime.getURL('js/page.js');
+script.src = browser.runtime.getURL('js/page.js');
 script.onload = () => script.remove();
 (document.head || document.documentElement).appendChild(script);
 

@@ -1,16 +1,17 @@
+type APIImageData = { [key: string]: string | null };
+
 class ExtStorage {
-    private static readonly storage = chrome.storage.sync;
+    private static readonly storage = browser.storage.sync;
     private static readonly STORAGE_APPID_KEY = 'appid';
 
-    static async getWAAppID(): Promise<string> {
-        return new Promise((resolve, reject) => {
-            this.storage.get(this.STORAGE_APPID_KEY, data => resolve(data[this.STORAGE_APPID_KEY]));
-        });
+    static async getWAAppID(): Promise<string | null> {
+        return this.storage.get(this.STORAGE_APPID_KEY)
+            .then(data => data[this.STORAGE_APPID_KEY] as string | null);
     }
 
-    static async setWAAppID(id: string): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.storage.set({ [this.STORAGE_APPID_KEY]: id }, resolve);
+    static async setWAAppID(id: string | null): Promise<void> {
+        return this.storage.set({
+            [this.STORAGE_APPID_KEY]: id
         });
     }
 }
@@ -40,7 +41,7 @@ class APIClient {
     }
 
     static async getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
-            Promise<{ [key: string]: string | null }> {
+            Promise<APIImageData> {
         const url = new URL(this.baseUrl);
         url.search = new URLSearchParams({
             appid: appid,
@@ -58,12 +59,12 @@ class APIClient {
 }
 
 class Messaging {
-    private static contentMessageHandler(message: any, sender: any, sendResponse: (r: any) => void):
-            boolean | void {
+    private static contentMessageHandler(message: any, sender: any):
+            Promise<APIImageData> | undefined {
         if (!message.fetchSteps) return;
         const data = message.fetchSteps;
 
-        ExtStorage.getWAAppID()
+        return ExtStorage.getWAAppID()
             .then(async (id) => {
                 if (!id) throw new Error('No app ID set');
 
@@ -71,37 +72,20 @@ class Messaging {
                 const img = await APIClient.getStepByStepImageDataFromAPI(
                     id, data.query, data.podID
                 );
-                console.debug(`Received data for query: \'${data.query}\' (podID: \'${data.podID}\'):\n${JSON.stringify(img)}`
-                );
+                console.debug(`Received data for query: \'${data.query}\' (podID: \'${data.podID}\'):\n${JSON.stringify(img)}`);
                 return img;
-            })
-            .then(img => sendResponse([img, null]))
-            .catch(err => sendResponse([null, err]));
-        return true;
+            });
     }
 
     static init() {
-        // fix Error serialization
-        if (!('toJSON' in Error.prototype)) {
-            Object.defineProperty(Error.prototype, 'toJSON', {
-                value: function () {
-                    const alt: any = {};
-                    Object.getOwnPropertyNames(this).forEach(n => alt[n] = this[n]);
-                    return alt;
-                },
-                configurable: true,
-                writable: true
-            });
-        }
-
         // set up listener for content script
-        chrome.runtime.onMessage.addListener(this.contentMessageHandler.bind(this));
+        browser.runtime.onMessage.addListener(this.contentMessageHandler.bind(this));
     }
 }
 
 
 // set up app ID prompt
-chrome.browserAction.onClicked.addListener(async (tab) => {
+browser.browserAction.onClicked.addListener(async (tab) => {
     const oldAppID = await ExtStorage.getWAAppID();
     const newAppID = prompt('Enter your Wolfram|Alpha app ID:', oldAppID);
     if (newAppID === null) return;  // 'cancel' selected
