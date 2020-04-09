@@ -27,7 +27,8 @@
     ],
     "web_accessible_resources": ["js/page.js"],
     "permissions": [
-        "storage"
+        "storage",
+        "*://api.wolframalpha.com/*"
     ],
     "browser_action": {
         "default_title": "Wolfram|Alpha MoreSteps"
