@@ -1,22 +1,5 @@
 type APIImageData = { [key: string]: string | null };
 
-class ExtStorage {
-    private static readonly storage = browser.storage.sync;
-    private static readonly STORAGE_APPID_KEY = 'appid';
-
-    static async getWAAppID(): Promise<string | null> {
-        return this.storage.get(this.STORAGE_APPID_KEY)
-            .then(data => data[this.STORAGE_APPID_KEY] as string | null);
-    }
-
-    static async setWAAppID(id: string | null): Promise<void> {
-        return this.storage.set({
-            [this.STORAGE_APPID_KEY]: id
-        });
-    }
-}
-
-
 class APIClient {
     private static baseUrl = 'https://api.wolframalpha.com/v2/query';
 
@@ -64,7 +47,7 @@ class Messaging {
         if (!message.fetchSteps) return;
         const data = message.fetchSteps;
 
-        return ExtStorage.getWAAppID()
+        return ExtStorage.getAppID()
             .then(async (id) => {
                 if (!id) throw new Error('No app ID set');
 
@@ -86,11 +69,11 @@ class Messaging {
 
 // set up app ID prompt
 browser.browserAction.onClicked.addListener(async (tab) => {
-    const oldAppID = await ExtStorage.getWAAppID();
+    const oldAppID = await ExtStorage.getAppID();
     const newAppID = prompt('Enter your Wolfram|Alpha app ID:', oldAppID);
     if (newAppID === null) return;  // 'cancel' selected
 
-    if (newAppID) await ExtStorage.setWAAppID(newAppID);
+    if (newAppID) await ExtStorage.setAppID(newAppID);
     else          alert('Invalid app ID');
 });
 

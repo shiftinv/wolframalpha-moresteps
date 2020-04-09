@@ -6,6 +6,7 @@
     "background": {
         "scripts": [
             "js/lib/webextension-polyfill@0.6.0.js",
+            "js/storage.js",
             "js/background.js"
         ]
     },
