@@ -16,14 +16,14 @@ class WebsocketHook {
             obj = JSON.parse(event.data);
         } catch (err) {
             console.error(err);
-            return true;
+            return false;
         }
 
         // handle stepByStep packets only
-        if (obj.type !== 'stepByStep') return true;
+        if (obj.type !== 'stepByStep') return false;
         // don't try to replace solutions with multiple steps
         if ('deploybuttonstates' in obj.pod
-            || 'stepbystepcontenttype' in obj.pod.subpods[0]) return true;
+            || 'stepbystepcontenttype' in obj.pod.subpods[0]) return false;
 
         console.info(`got packet:\n${JSON.stringify(obj)}`);
 
@@ -45,7 +45,7 @@ class WebsocketHook {
                 continueSocket();
             });
 
-        return false;
+        return true;
     }
 
     static init() {
@@ -61,8 +61,8 @@ class WebsocketHook {
                         const newEvent = WebsocketHook.fixMessageEventData(event);
                         const continueSocket = origListener.bind(this, newEvent, ...args2);
 
-                        // returns false if event will be handled asynchronously
-                        if (WebsocketHook.websocketMessageEventHook(newEvent, continueSocket)) {
+                        // returns true if event will be handled asynchronously
+                        if (!WebsocketHook.websocketMessageEventHook(newEvent, continueSocket)) {
                             continueSocket();
                         }
                     };
