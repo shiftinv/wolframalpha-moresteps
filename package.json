@@ -1,5 +1,6 @@
 {
   "name": "wolframalpha-moresteps",
+  "description": "Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the API",
   "scripts": {
     "build": "tsc --build tsconfig.json && node scripts/build_target.js",
     "watch": "tsc --build tsconfig.json -w",
@@ -11,5 +12,10 @@
     "tslint-config-airbnb": "^5.11.2",
     "typescript": "^3.8.3",
     "web-ext-types": "^3.2.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shiftinv/wolframalpha-moresteps.git"
+  },
+  "license": "Apache-2.0"
 }
