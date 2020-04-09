@@ -7,6 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [chrome, firefox]
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
@@ -15,12 +18,12 @@ jobs:
 
       - run: npm install
       - run: npm run lint
-      - run: npm run build
+      - run: npm run build ${{ matrix.target }}
 
       - run: cd dist && zip -r ../dist.zip .
       - uses: actions/upload-artifact@v1
         with:
-          name: dist-zip
+          name: dist-zip-${{ matrix.target }}
           path: ./dist.zip
 
   release:
@@ -30,7 +33,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v1
         with:
-          name: dist-zip
+          name: dist-zip-chrome
+      - uses: actions/download-artifact@v1  # duplicate step as there's currently no way to specify a matrix for a single step
+        with:
+          name: dist-zip-firefox
       - uses: actions/create-release@v1
         id: create-release
         env:
@@ -44,7 +50,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          asset_name: wolframalpha-moresteps.zip
-          asset_path: ./dist-zip/dist.zip
+          asset_name: wolframalpha-moresteps-chrome.zip
+          asset_path: ./dist-zip-chrome/dist.zip
+          asset_content_type: application/zip
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+      - uses: actions/upload-release-asset@v1  # duplicate step as there's currently no way to specify a matrix for a single step
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_name: wolframalpha-moresteps-firefox.zip
+          asset_path: ./dist-zip-firefox/dist.zip
           asset_content_type: application/zip
           upload_url: ${{ steps.create-release.outputs.upload_url }}
