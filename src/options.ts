@@ -2,14 +2,27 @@ const inputField = document.querySelector('#appid') as HTMLInputElement;
 const submitButton = document.querySelector('#appid-btn') as HTMLButtonElement;
 const statusText = document.querySelector('#status') as HTMLSpanElement;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    const oldAppID = await ExtStorage.getAppID();
-    if (oldAppID) inputField.value = oldAppID;
+const placeholder = '**********';
 
+
+// show placeholder if app ID is already set
+document.addEventListener('DOMContentLoaded', async () => {
+    const currAppID = await ExtStorage.getAppID();
+    if (currAppID) {
+        inputField.value = placeholder;
+    }
     inputField.disabled = false;
+});
+
+// remove placeholder once input field is selected
+inputField.addEventListener('focus', () => {
+    if (inputField.value === placeholder) {
+        inputField.value = '';
+    }
     submitButton.disabled = false;
 });
 
+// save new app ID
 submitButton.addEventListener('click', async (e) => {
     e.preventDefault();
     statusText.style.display = '';
