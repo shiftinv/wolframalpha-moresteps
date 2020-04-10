@@ -36,6 +36,13 @@ class APIClient {
 
         const response = await fetch(url.toString());
         const resultJson = (await response.json()).queryresult;
+        if (!resultJson.success) {
+            const errText = resultJson.error
+                ? `API error: ${resultJson.error.msg} (code: ${resultJson.error.code})`
+                : 'API request unsuccessful';
+            throw new Error(errText);
+        }
+
         const imgData = this.findStepsImg(resultJson, podID);
         return { ...imgData, host: resultJson.host };
     }
