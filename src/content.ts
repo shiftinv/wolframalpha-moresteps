@@ -28,7 +28,8 @@ class Messaging {
 }
 
 
-console.info('Initializing Wolfram|Alpha MoreSteps');
+const version = browser.runtime.getManifest().version;
+console.info(`Initializing Wolfram|Alpha MoreSteps v${version}`);
 
 // initialize handler for messages from page script
 Messaging.init();
