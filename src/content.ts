@@ -15,7 +15,10 @@ class Messaging {
             try {
                 imageData = await this.backgroundFetchSteps(event.data.query, event.data.podID);
             } catch (err) {
-                console.error(`Background script error:\n${err}`);
+                console.error(
+                    'Background script error:\n',
+                    err
+                );
             }
 
             // send response with (new) data

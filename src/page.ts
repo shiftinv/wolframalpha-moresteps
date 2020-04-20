@@ -16,7 +16,12 @@ class WebsocketHook {
         try {
             obj = JSON.parse(event.data);
         } catch (err) {
-            console.error(err);
+            console.error(
+                'Error parsing WebSocket json:\n',
+                err,
+                '\nJSON string:\n',
+                event.data
+            );
             return false;
         }
 
@@ -26,7 +31,10 @@ class WebsocketHook {
         if ('deploybuttonstates' in obj.pod
             || 'stepbystepcontenttype' in obj.pod.subpods[0]) return false;
 
-        console.info(`got packet:\n${JSON.stringify(obj)}`);
+        console.info(
+            'got packet:\n',
+            obj
+        );
 
         // request image data from content script
         Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
