@@ -13,10 +13,8 @@
     "content_scripts": [
         {
             "matches": [
-                "http://*.wolframalpha.com/*",
-                "https://*.wolframalpha.com/*",
-                "http://*.wolfram.com/*",
-                "https://*.wolfram.com/*"
+                "http://*.wolframalpha.com/input/*",
+                "https://*.wolframalpha.com/input/*"
             ],
             "js": [
                 "js/lib/webextension-polyfill@0.6.0.js",
