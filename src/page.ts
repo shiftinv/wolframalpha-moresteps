@@ -10,7 +10,8 @@ class WebsocketHook {
         return o;
     }
 
-    private static websocketMessageEventHook(event: MessageEventRW, continueSocket: () => any) {
+    private static websocketMessageEventHook(event: MessageEventRW, continueSocket: () => any):
+            boolean {
         let obj: any;
         try {
             obj = JSON.parse(event.data);
@@ -30,18 +31,28 @@ class WebsocketHook {
         // request image data from content script
         Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
             .then((imageData) => {
-                if (imageData) {
-                    obj.host = imageData.host;
+                try {
+                    if (imageData) {
+                        obj.host = imageData.host;
 
-                    const wsImg = obj.pod.subpods[0].img;
-                    wsImg.src = imageData.src;
-                    wsImg.width = imageData.width;
-                    wsImg.height = imageData.height;
+                        const wsImg = obj.pod.subpods[0].img;
+                        wsImg.src = imageData.src;
+                        wsImg.width = imageData.width;
+                        wsImg.height = imageData.height;
 
-                    event.data = JSON.stringify(obj);
+                        event.data = JSON.stringify(obj);
 
-                    this.newImages.add(wsImg.src);
+                        this.newImages.add(wsImg.src);
+                    }
+                } catch (e) {
+                    console.error(
+                        'Error reading new image data:\n',
+                        e,
+                        '\nImage data:\n',
+                        imageData
+                    );
                 }
+
                 continueSocket();
             });
 
