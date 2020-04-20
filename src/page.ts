@@ -1,4 +1,5 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
+type WebSocketListener = (this: WebSocket, ev: any) => any;
 
 class WebsocketHook {
     static newImages = new Set<string>();
@@ -67,26 +68,28 @@ class WebsocketHook {
         return true;
     }
 
+    private static buildNewListener(origListener: WebSocketListener): WebSocketListener {
+        console.info('Hooking websocket message listener');
+        return function (this: WebSocket, event: MessageEvent, ...args: any[]) {
+            // handle new message
+            const newEvent = WebsocketHook.fixMessageEventData(event);
+            const continueSocket = origListener.bind(this, newEvent, ...args);
+
+            // returns true if event will be handled asynchronously
+            if (!WebsocketHook.websocketMessageEventHook(newEvent, continueSocket)) {
+                continueSocket();
+            }
+        };
+    }
+
     static init() {
         console.info('Initializing websocket hook');
         const origAddEventListener = window.WebSocket.prototype.addEventListener;
         window.WebSocket.prototype.addEventListener =
-            function (type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]) {
-                let newListener = listener;
-                if (type === 'message') {
-                    // hook listener
-                    const origListener = listener;
-                    newListener = (event, ...args2) => {
-                        const newEvent = WebsocketHook.fixMessageEventData(event);
-                        const continueSocket = origListener.bind(this, newEvent, ...args2);
-
-                        // returns true if event will be handled asynchronously
-                        if (!WebsocketHook.websocketMessageEventHook(newEvent, continueSocket)) {
-                            continueSocket();
-                        }
-                    };
-                    console.info('hooked websocket listener');
-                }
+            function (type: string, listener: WebSocketListener, ...args: any[]) {
+                const newListener = type === 'message'
+                    ? WebsocketHook.buildNewListener(listener)  // hook listener
+                    : listener;
                 return origAddEventListener.apply(this, [type, newListener, ...args] as any);
             };
     }
@@ -203,7 +206,6 @@ class Observer {
 }
 
 
-// initialize websocket hook
 Messaging.init();
 WebsocketHook.init();
 
