@@ -1,7 +1,18 @@
 class Messaging {
+    private static stepsPromises: { [key: string]: Promise<any> } = {};
+
     private static async backgroundFetchSteps(query: string, podID: string): Promise<any> {
+        const cacheKey = `${query}:::${podID}`;
+        const prev = this.stepsPromises[cacheKey];
+        if (prev) {
+            console.info(`Found existing promise for query \'${query}\' (podID: \'${podID}\')`);
+            return prev;
+        }
+
         // request image data from background script
-        return browser.runtime.sendMessage({ fetchSteps: { query: query, podID: podID } });
+        const p = browser.runtime.sendMessage({ fetchSteps: { query: query, podID: podID } });
+        this.stepsPromises[cacheKey] = p;
+        return p;
     }
 
     static init() {
