@@ -1,7 +1,8 @@
 type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
-type WebSocketListener = (this: WebSocket, ev: any) => any;
+type WebSocketListener = (this: WebSocket, ev: MessageEvent) => any;
 
 class WebsocketHook {
+    private static webSocketQueues = new Map<WebSocketListener, Map<MessageEvent, boolean>>();
     static newImages = new Set<string>();
 
     private static fixMessageEventData(o: MessageEvent): MessageEventRW {
@@ -11,7 +12,7 @@ class WebsocketHook {
         return o;
     }
 
-    private static websocketMessageEventHook(event: MessageEventRW, continueSocket: () => any):
+    private static websocketMessageEventHook(event: MessageEventRW, continueProcessing: () => any):
             boolean {
         let obj: any;
         try {
@@ -62,22 +63,63 @@ class WebsocketHook {
                     );
                 }
 
-                continueSocket();
+                continueProcessing();
             });
 
         return true;
     }
 
+    private static enqueueMessageForListener(listener: WebSocketListener, ev: MessageEvent) {
+        if (!this.webSocketQueues.has(listener)) {
+            this.webSocketQueues.set(listener, new Map());
+        }
+        const queue = this.webSocketQueues.get(listener)!;
+        queue.set(ev, false);
+    }
+
+    private static handleMessageForListener(
+        listener: WebSocketListener,
+        ev: MessageEvent,
+        thisArg: WebSocket
+    ) {
+        const queue = this.webSocketQueues.get(listener)!;
+        const currStatus = queue.get(ev);
+        if (currStatus !== false) {
+            // don't handle
+            //   - already finished messages (status: true)
+            //   - messages not contained in queue (status: undefined)
+            // (just to make sure, in theory this should never happen)
+            console.error(
+                `Unexpected status for event in queue: ${currStatus}\n`,
+                'Event data:\n',
+                ev
+            );
+            return;
+        }
+        queue.set(ev, true);
+
+        // process queue from the start until incomplete entry is found
+        //  (this relies on the fact that Map entries are iterated in insertion order)
+        for (const [currEv, isDone] of queue) {
+            if (!isDone) break;
+            queue.delete(currEv);
+            listener.apply(thisArg, [currEv]);
+        }
+    }
+
     private static buildNewListener(origListener: WebSocketListener): WebSocketListener {
         console.info('Hooking websocket message listener');
-        return function (this: WebSocket, event: MessageEvent, ...args: any[]) {
+        return function (this: WebSocket, event: MessageEvent) {
             // handle new message
             const newEvent = WebsocketHook.fixMessageEventData(event);
-            const continueSocket = origListener.bind(this, newEvent, ...args);
+
+            WebsocketHook.enqueueMessageForListener(origListener, newEvent);
+            const continueProcessing = () =>
+                WebsocketHook.handleMessageForListener(origListener, newEvent, this);
 
             // returns true if event will be handled asynchronously
-            if (!WebsocketHook.websocketMessageEventHook(newEvent, continueSocket)) {
-                continueSocket();
+            if (!WebsocketHook.websocketMessageEventHook(newEvent, continueProcessing)) {
+                continueProcessing();
             }
         };
     }
@@ -86,7 +128,7 @@ class WebsocketHook {
         console.info('Initializing websocket hook');
         const origAddEventListener = window.WebSocket.prototype.addEventListener;
         window.WebSocket.prototype.addEventListener =
-            function (type: string, listener: WebSocketListener, ...args: any[]) {
+            function (type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]) {
                 const newListener = type === 'message'
                     ? WebsocketHook.buildNewListener(listener)  // hook listener
                     : listener;
