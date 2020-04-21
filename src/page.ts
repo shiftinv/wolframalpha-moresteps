@@ -18,11 +18,12 @@ class WebsocketHook {
         try {
             obj = JSON.parse(event.data);
         } catch (err) {
-            console.error(
-                'Error parsing WebSocket json:\n',
-                err,
-                '\nJSON string:\n',
-                event.data
+            ErrorHandler.processError(
+                `Error parsing WebSocket json`,
+                {
+                    'Error': err,
+                    'JSON string': event.data
+                }
             );
             return false;
         }
@@ -55,11 +56,12 @@ class WebsocketHook {
                         this.newImages.add(wsImg.src);
                     }
                 } catch (e) {
-                    console.error(
-                        'Error reading new image data:\n',
-                        e,
-                        '\nImage data:\n',
-                        imageData
+                    ErrorHandler.processError(
+                        `Error reading new image data:\n${e}`,
+                        {
+                            'Error': e,
+                            'Image data': imageData
+                        }
                     );
                 }
 
@@ -89,10 +91,11 @@ class WebsocketHook {
             //   - already finished messages (status: true)
             //   - messages not contained in queue (status: undefined)
             // (just to make sure, in theory this should never happen)
-            console.error(
-                `Unexpected status for event in queue: ${currStatus}\n`,
-                'Event data:\n',
-                ev
+            ErrorHandler.processError(
+                `Unexpected status for event in queue: ${currStatus}`,
+                {
+                    'Event data': ev
+                }
             );
             return;
         }

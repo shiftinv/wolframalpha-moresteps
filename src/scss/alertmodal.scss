@@ -1,0 +1,49 @@
+#moresteps-alertcontainer {
+    position: fixed;
+    z-index: 2147483647;
+    top: 10px;
+    right: 20px;
+
+    min-width: 300px;
+    max-width: 25%;
+
+    #moresteps-alertmodal {
+        padding: 12px 16px;
+        margin: 16px 0;
+
+        border-radius: 8px;
+        box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.5);
+
+        background-color: #ff3030;
+
+        font-family: "Source Sans Pro", Arial, Helvetica, sans-serif;
+        font-size: small;
+        color: white;
+
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+
+        animation: fadein 0.5s;
+
+        & > .modal-content {
+            width: 100%;
+            min-width: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        & > .modal-close {
+            margin: 0 0 0 20px;
+
+            font-size: 28px;
+            cursor: pointer;
+        }
+    }
+}
+
+@keyframes fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

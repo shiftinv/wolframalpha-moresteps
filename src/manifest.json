@@ -18,12 +18,17 @@
             ],
             "js": [
                 "js/lib/webextension-polyfill@0.6.0.js",
+                "js/errorhandler.js",
                 "js/content.js"
             ],
+            "css": ["css/alertmodal.css"],
             "run_at": "document_start"
         }
     ],
-    "web_accessible_resources": ["js/page.js"],
+    "web_accessible_resources": [
+        "js/errorhandler.js",
+        "js/page.js"
+    ],
     "permissions": [
         "storage",
         "*://api.wolframalpha.com/*"

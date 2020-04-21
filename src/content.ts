@@ -26,9 +26,11 @@ class Messaging {
             try {
                 imageData = await this.backgroundFetchSteps(event.data.query, event.data.podID);
             } catch (err) {
-                console.error(
-                    'Background script error:\n',
-                    err
+                ErrorHandler.processError(
+                    `Background script error:\n${err}`,
+                    {
+                        'Error': err
+                    }
                 );
             }
 
@@ -42,6 +44,14 @@ class Messaging {
 }
 
 
+function injectScript(path: string) {
+    const script = document.createElement('script');
+    script.src = browser.runtime.getURL(path);
+    script.onload = () => script.remove();
+    (document.head || document.documentElement).appendChild(script);
+}
+
+
 const version = browser.runtime.getManifest().version;
 console.info(`Initializing Wolfram|Alpha MoreSteps v${version}`);
 
@@ -49,10 +59,8 @@ console.info(`Initializing Wolfram|Alpha MoreSteps v${version}`);
 Messaging.init();
 
 // add page script to DOM
-const script = document.createElement('script');
-script.src = browser.runtime.getURL('js/page.js');
-script.onload = () => script.remove();
-(document.head || document.documentElement).appendChild(script);
+injectScript('js/errorhandler.js');
+injectScript('js/page.js');
 
 
 export {};
