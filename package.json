@@ -2,12 +2,19 @@
   "name": "wolframalpha-moresteps",
   "description": "Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the API",
   "scripts": {
-    "build": "tsc --build tsconfig.json && node scripts/build_target.js",
-    "watch": "tsc --build tsconfig.json -w",
+    "build": "npm-run-all -l -n \"build:!(extension)\" \"build:extension {1}\" --",
+    "watch": "npm-run-all -l -n --parallel watch:*",
+    "build:extension": "node scripts/build_target.js",
+    "build:ts": "tsc --build tsconfig.json",
+    "watch:ts": "npm run build:ts -- --watch",
+    "build:scss": "node-sass src/scss -o dist/css",
+    "watch:scss": "npm run build:scss -- --watch",
     "lint": "tslint --project tsconfig.json"
   },
   "devDependencies": {
     "deepmerge": "^4.2.2",
+    "node-sass": "^4.13.1",
+    "npm-run-all": "^4.1.5",
     "tslint": "^6.1.0",
     "tslint-config-airbnb": "^5.11.2",
     "typescript": "^3.8.3",
