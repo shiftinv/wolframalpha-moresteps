@@ -1,2 +1,5 @@
 dist
 node_modules
+
+src/static/icons/*
+!src/static/icons/*.png
