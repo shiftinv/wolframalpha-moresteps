@@ -13,7 +13,11 @@ const sourceDir = 'src/';
 const targetDir = 'dist/';
 
 const manifestExtras = {
-    chrome: {},
+    chrome: {
+        background: {
+            persistent: false
+        }
+    },
     firefox: {
         browser_specific_settings: {
             gecko: {
