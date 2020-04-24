@@ -7,6 +7,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const merge = require('deepmerge');
+const ignore = require('ignore');
 
 
 const sourceDir = 'src/';
@@ -34,7 +35,7 @@ const _info = console.info.bind(console, '[i]');
 
 function usage() {
     _err('Invalid arguments!');
-    _err(`>> Usage: ${process.argv[0]} ${process.argv[1]} (${targets.join('|')})`);
+    _err(`>> Usage: ${process.argv[0]} ${process.argv[1]} (${Object.keys(manifestExtras).join('|')})`);
     process.exit(1);
 }
 
@@ -85,7 +86,10 @@ function patchManifest(obj) {
 
 function copyStaticFiles() {
     _info('Copying static files');
-    fs.copySync(path.join(sourceDir, 'static'), path.join(targetDir));
+    const ig = ignore().add(fs.readFileSync('.gitignore', 'utf8'));
+    fs.copySync(path.join(sourceDir, 'static'), path.join(targetDir), {
+        filter: ig.createFilter()
+    });
 }
 
 function fixWebExtPolyfill() {
