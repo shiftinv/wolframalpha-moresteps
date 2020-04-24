@@ -35,6 +35,23 @@ function usage() {
 }
 
 
+// check args
+if (process.argv.length !== 3) usage();
+
+const target = process.argv[2];
+if (!Object.keys(manifestExtras).includes(target)) usage();
+
+_log(`Building target '${target}'`);
+
+// run build steps
+checkDirs();
+patchManifest(manifestExtras[target]);
+copyStaticFiles();
+fixWebExtPolyfill();
+
+_log('Done.');
+
+
 function checkDirs() {
     _info('Checking directories');
 
@@ -67,27 +84,10 @@ function copyStaticFiles() {
     fs.copySync(path.join(sourceDir, 'static'), path.join(targetDir));
 }
 
-
-// check args
-if (process.argv.length !== 3) usage();
-
-const target = process.argv[2];
-if (!Object.keys(manifestExtras).includes(target)) usage();
-
-
-// handle targets
-checkDirs();
-patchManifest(manifestExtras[target]);
-copyStaticFiles();
-
-switch (target) {
-case 'chrome':
-    break;
-case 'firefox':
-    // remove webext polyfill, not required for firefox
-    fs.truncateSync(path.join(targetDir, 'js/lib/webextension-polyfill@0.6.0.js'));
-    break;
+function fixWebExtPolyfill() {
+    if (target === 'firefox') {
+        // remove webext polyfill, not required for firefox
+        _info('Truncating WebExtension polyfill for Firefox');
+        fs.truncateSync(path.join(targetDir, 'js/lib/webextension-polyfill@0.6.0.js'));
+    }
 }
-
-
-_log('Done.');

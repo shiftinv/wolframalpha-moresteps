@@ -10,11 +10,9 @@
     "typeRoots": [
       "node_modules/@types",
       "node_modules/web-ext-types"
-    ],
-    "allowJs": true
+    ]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js"
+    "src/**/*.ts"
   ]
 }

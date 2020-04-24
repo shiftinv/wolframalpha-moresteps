@@ -18,7 +18,7 @@
   "linterOptions": {
     "exclude": [
       "./node_modules/**",
-      "./src/lib/**"
+      "./src/static/**"
     ]
   }
 }
