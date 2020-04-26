@@ -75,7 +75,7 @@ function patchManifest(obj) {
     _info(`Merging manifest.json with:\n${JSON.stringify(obj, null, 4)}`);
 
     // read base manifest
-    const manifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'manifest.json'), 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 
     // merge with extra values
     const newManifest = merge(manifest, obj);
