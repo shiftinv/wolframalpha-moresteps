@@ -24,7 +24,17 @@ Once you've obtained an AppID, click the extension icon, paste the AppID and cli
 
 ## Development
 
+Requirements:
+- OS: Windows, Linux, macOS
+- Node.js: >= 10.x
+
+Steps:
 1. Clone this repository
 2. Run `npm install && npm run build <browser>`, where `<browser>` is either `chrome` or `firefox`
-3. Go to `chrome://extensions`, enable developer mode
-4. Click `'Load unpacked'` and select the `dist/` directory
+3. Install the extension
+    - Chrome
+        1. Go to `chrome://extensions`, enable developer mode
+        2. Click `'Load unpacked'` and select the `dist/` directory
+    - Firefox
+        1. Go to `about:debugging#/runtime/this-firefox`
+        2. Click `'Load Temporary Add-on...'` and select the `dist/manifest.json` file
