@@ -56,7 +56,7 @@ class Messaging {
 
         return ExtStorage.getAppID()
             .then(async (id) => {
-                if (!id) throw new Error('No app ID set');
+                if (!id) throw new Error('No AppID set');
 
                 console.debug(`Retrieving data for query \'${data.query}\' (podID: \'${data.podID}\')`);
                 const img = await APIClient.getStepByStepImageDataFromAPI(

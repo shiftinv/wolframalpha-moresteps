@@ -5,7 +5,7 @@ const statusText = document.querySelector('#status') as HTMLSpanElement;
 const placeholder = '**********';
 
 
-// show placeholder if app ID is already set
+// show placeholder if AppID is already set
 document.addEventListener('DOMContentLoaded', async () => {
     const currAppID = await ExtStorage.getAppID();
     if (currAppID) {
@@ -22,7 +22,7 @@ inputField.addEventListener('focus', () => {
     submitButton.disabled = false;
 });
 
-// save new app ID
+// save new AppID
 submitButton.addEventListener('click', async (e) => {
     e.preventDefault();
     statusText.style.display = '';
