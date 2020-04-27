@@ -10,7 +10,7 @@ Browser extension that automatically replaces partial step-by-step solutions on 
 
 To use this extension, you'll need an AppID for the Wolfram|Alpha API. If you don't have a developer account and/or AppID yet, follow these steps to get one:
 
-1. Create a Wolfram ID here [https://developer.wolframalpha.com/portal/myapps/](), and confirm your email address
+1. Create a Wolfram ID here [https://developer.wolframalpha.com/portal/myapps/](https://developer.wolframalpha.com/portal/myapps/), and confirm your email address
 2. Sign up for API access in the developer portal
 3. Create a new application and copy the AppID
 
@@ -26,7 +26,7 @@ Once you've obtained an AppID, click the extension icon, paste the AppID and cli
 
 Requirements:
 - OS: Windows, Linux, macOS
-- Node.js: >= 10.x
+- Node.js: ≥ 10.x
 
 Steps:
 1. Clone this repository
