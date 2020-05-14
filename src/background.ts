@@ -30,6 +30,7 @@ class APIClient {
             appid: appid,
             input: query,
             podstate: `${podID}__Step-by-step solution`,
+            includepodid: podID,
             format: 'image',
             output: 'json'
         }).toString();
