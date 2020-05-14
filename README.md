@@ -1,16 +1,17 @@
 # wolframalpha-moresteps
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/shiftinv/wolframalpha-moresteps/Build%20browser%20extensions?logo=github)](https://github.com/shiftinv/wolframalpha-moresteps/actions?query=workflow%3A%22Build+browser+extensions%22)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/shiftinv/wolframalpha-moresteps?label=version)](https://github.com/shiftinv/wolframalpha-moresteps/releases/latest)
+[![GitHub commits since tagged version](https://img.shields.io/github/commits-since/shiftinv/wolframalpha-moresteps/v0.0.1)](https://github.com/shiftinv/wolframalpha-moresteps/commits/master)
 [![GitHub](https://img.shields.io/github/license/shiftinv/wolframalpha-moresteps)](https://github.com/shiftinv/wolframalpha-moresteps/blob/master/LICENSE)
 
-Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the API
+Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the official API
 
 
 ## Setup
 
 To use this extension, you'll need an AppID for the Wolfram|Alpha API. If you don't have a developer account and/or AppID yet, follow these steps to get one:
 
-1. Create a Wolfram ID here [https://developer.wolframalpha.com/portal/myapps/](https://developer.wolframalpha.com/portal/myapps/), and confirm your email address
+1. Create a Wolfram ID at [https://developer.wolframalpha.com/portal/myapps/](https://developer.wolframalpha.com/portal/myapps/), and confirm your email address
 2. Sign up for API access in the developer portal
 3. Create a new application and copy the AppID
 
@@ -27,6 +28,7 @@ Once you've obtained an AppID, click the extension icon, paste the AppID and cli
 Requirements:
 - OS: Windows, Linux, macOS
 - Node.js: ≥ 10.x
+- Chrome/Firefox: any semi-recent version
 
 Steps:
 1. Clone this repository
