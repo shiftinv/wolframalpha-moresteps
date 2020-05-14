@@ -18,7 +18,7 @@ class APIClient {
         }
 
         if (!img) {
-            throw new Error('Couldn\'t find step-by-step subpod image in API response');
+            throw new Error(`Couldn\'t find step-by-step image subpod in API response for podID '${podID}'`);
         }
         return img;
     }

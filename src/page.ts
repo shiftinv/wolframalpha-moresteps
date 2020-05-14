@@ -120,9 +120,19 @@ class WebsocketHook {
             const continueProcessing = () =>
                 WebsocketHook.handleMessageForListener(origListener, newEvent, this);
 
-            // returns true if event will be handled asynchronously
-            if (!WebsocketHook.websocketMessageEventHook(newEvent, continueProcessing)) {
-                continueProcessing();
+            try {
+                // returns true if event will be handled asynchronously
+                if (!WebsocketHook.websocketMessageEventHook(newEvent, continueProcessing)) {
+                    continueProcessing();
+                }
+            } catch (e) {
+                ErrorHandler.processError(
+                    `Error in websocket message hook:\n${e}`,
+                    {
+                        'Error': e,
+                        'Event': newEvent
+                    }
+                );
             }
         };
     }
