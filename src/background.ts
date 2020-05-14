@@ -98,8 +98,24 @@ class APIRequestConsolidator {
         };
     }
 
+    private static addPodID(podID: string): Promise<APIImageData> {
+        return new Promise(
+            (resolve, reject) => this.currentPodRequests.push([podID, resolve, reject])
+        );
+    }
+
     static async getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
             Promise<APIImageData> {
+        const consolidate = await ExtStorage.getOption('consolidate');
+        if (!consolidate) {
+            // send immediately if requests shouldn't get consolidated
+            this.currentAppID = appid;
+            this.currentQuery = { query: query, timer: -1 };
+            const promise = this.addPodID(podID);
+            this.sendRequest();
+            return promise;
+        }
+
         if (this.currentQuery) {
             if (this.currentQuery.query !== query) {
                 // finish previous set of podIDs if new query is received
@@ -114,9 +130,7 @@ class APIRequestConsolidator {
         }
 
         // add new request
-        return new Promise(
-            (resolve, reject) => this.currentPodRequests.push([podID, resolve, reject])
-        );
+        return this.addPodID(podID);
     }
 }
 
