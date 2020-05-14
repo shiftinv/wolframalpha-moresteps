@@ -55,7 +55,8 @@ class APIClient {
 }
 
 class APIRequestConsolidator {
-    private static bufferTimeMs = 1000;
+    // make sure to update description in storage.ts when updating this value
+    private static bufferTimeMs = 500;
 
     private static currentAppID: string;
     private static currentQuery: { query: string, timer: number } | null;

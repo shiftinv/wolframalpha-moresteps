@@ -10,6 +10,15 @@
     "typeRoots": [
       "node_modules/@types",
       "node_modules/web-ext-types"
+    ],
+    "lib": [
+      // defaults for target ES6
+      "DOM",
+      "ES6",
+      "DOM.Iterable",
+      "ScriptHost",
+      // other additions
+      "ES2017"
     ]
   },
   "include": [

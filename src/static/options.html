@@ -1,14 +1,24 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="css/options.css">
     </head>
     <body>
-        <div>
-            <label for="appid">Wolfram|Alpha AppID:</label>
-            <input id="appid" type="text" disabled></input>
+        <div id="appid-input">
+            <div>
+                <label for="appid">Wolfram|Alpha AppID:</label>
+                <input id="appid" type="text" disabled></input>
+            </div>
+            <div>
+                <button id="appid-btn" type="submit" disabled>Save</button>
+                <span id="status"></span>
+            </div>
         </div>
-        <button id="appid-btn" type="submit" disabled>Save</button>
-        <span id="status" style="display: none; color: green"></span>
+
+        <hr/>
+
+        <div id="options"></div>
+
 
         <script src="js/lib/webextension-polyfill@0.6.0.js"></script>
         <script src="js/storage.js"></script>

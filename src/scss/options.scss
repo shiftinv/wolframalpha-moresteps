@@ -1,0 +1,13 @@
+#status {
+    color: green;
+}
+
+#options {
+    > div[title] > label {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+    }
+    label, input {
+        vertical-align: middle;
+    }
+}
