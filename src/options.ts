@@ -56,7 +56,11 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
         checkbox.disabled = false;
     });
 
+    // add tooltip
     if (option.description) div.title = option.description;
+
+    // indent if suboption
+    if (key.includes('+')) div.classList.add('suboption');
 
     div.appendChild(checkbox);
     div.appendChild(label);

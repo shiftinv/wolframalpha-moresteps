@@ -3,9 +3,15 @@
 }
 
 #options {
-    > div[title] > label {
-        text-decoration: underline;
-        text-decoration-style: dotted;
+    > div {
+        &[title] label {
+            text-decoration: underline;
+            text-decoration-style: dotted;
+        }
+
+        &.suboption {
+            margin-left: 16px;
+        }
     }
     label, input {
         vertical-align: middle;
