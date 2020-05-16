@@ -16,12 +16,17 @@ class ExtStorage {
         'prefetch': {
             text: 'Prefetch step-by-step instructions',
             default: true,
-            description: '[Recommended]\nFetches step-by-step instructions as soon as the first query results are received,\nnot just when each original step-by-step block is received, which reduces loading delays by 1-2s'
+            description: 'Fetches step-by-step instructions as soon as the first query results are received,\nnot just when each original step-by-step block is received, which reduces loading delays by 1-2s'
         },
         'consolidate': {
             text: 'Consolidate requests',
             default: true,
-            description: '[Recommended] [Requires \'prefetch\' option]\nAccumulates subqueries and sends them as one request.\nThis can significantly reduce the number of API calls if a result page contains multiple step-by-step blocks\n(in exchange for slightly longer step-by-step loading delays on such pages).'
+            description: '[Requires \'prefetch\' option]\nAccumulates subqueries and sends them as one request.\nThis can significantly reduce the number of API calls if a result page contains multiple step-by-step blocks,\nin exchange for slightly longer step-by-step loading delays on such pages'
+        },
+        'consolidate+async': {
+            text: 'Retrieve results asynchronously',
+            default: true,
+            description: '[Requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis will compensate for some of the delay introduced by consolidation, and does not count towards API usage'
         }
     });
 
