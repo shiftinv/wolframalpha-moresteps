@@ -1,16 +1,28 @@
-interface APIResponse {
-    host: string,
-    pods: [{
-        id: string,
-        subpods: [{
-            title: string,
-            img?: any
-        }]
-    }]
+interface APIPodBase {
+    id: string;
+}
+interface APIPodSync extends APIPodBase {
+    subpods: [{
+        title: string,
+        img?: any
+    }];
+}
+interface APIPodAsync extends APIPodBase {
+    async: string;
+}
+type APIPod = APIPodSync | APIPodAsync;
+
+interface APIResponseAsync {
+    pods: APIPod[];
+}
+interface APIResponse extends APIResponseAsync {
+    host: string;
+    success: boolean;
+    error: false | { code: number, msg: string };
 }
 
 interface APIImageData {
-    [key: string]: string
+    [key: string]: string;
 }
 
 
@@ -19,15 +31,23 @@ interface ExtMessage<I extends { [key: string]: any }, O> {
     out: O;
 }
 
-// content script <---> background script
+// content script <---> background script (main)
 interface StepByStepBackgroundMessage extends ExtMessage<
     {
-        fetchSteps: {
-            query: string,
-            podIDs: string[]
-        }
+        type: 'fetchSteps',
+        query: string,
+        podIDs: string[]
     },
     APIResponse
+> {}
+
+// content script <---> background script (async pods)
+interface StepByStepAsyncPodMessage extends ExtMessage<
+    {
+        type: 'fetchAsyncPod',
+        url: string
+    },
+    APIResponseAsync
 > {}
 
 // page script <---> content script (prefetch)

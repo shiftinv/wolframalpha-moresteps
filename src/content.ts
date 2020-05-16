@@ -1,15 +1,28 @@
 class APIHandler {
     private static stepsPromises: { [key: string]: Promise<any> } = {};
 
-    private static findStepsImg(json: APIResponse, podID: string) {
-        const img = json.pods
-            .find(p => p.id === podID)?.subpods
-            .find(s => s.title.includes('steps') && 'img' in s)?.img;
-
+    private static findStepsImg(pod: APIPodSync, podID: string) {
+        const img = pod.subpods.find(s => s.title.includes('steps') && 'img' in s)?.img;
         if (!img) {
-            throw new Error(`Couldn\'t find step-by-step image subpod in API response for podID '${podID}'`);
+            throw new Error(`Couldn't find step-by-step image subpod in API response for podID '${podID}'`);
         }
         return img;
+    }
+
+    private static async handleResponse(json: APIResponse, podID: string): Promise<APIImageData> {
+        let pod = json.pods.find(p => p.id === podID) as APIPod;
+        if (!pod) throw new Error(`Couldn't find pod ID \'${podID}\' in API response`);
+
+        const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
+        if (isAsync(pod)) {
+            // load pod contents asynchronously
+            const result = await Messaging.sendMessage<StepByStepAsyncPodMessage>({
+                type: 'fetchAsyncPod',
+                url: pod.async
+            });
+            pod = result.pods[0] as APIPodSync;
+        }
+        return this.findStepsImg(pod, podID);
     }
 
     private static getPromise(
@@ -55,17 +68,17 @@ class APIHandler {
         // send message to background script
         console.log(`Retrieving data for query \'${query}\' (podIDs: ${requestPodIDs})`);
         Messaging.sendMessage<StepByStepBackgroundMessage>({
-            fetchSteps: {
-                query: query,
-                podIDs: requestPodIDs
-            }
+            type: 'fetchSteps',
+            query: query,
+            podIDs: requestPodIDs
         }).then((json) => {
             console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
             // try finding image subpod for each podID individually
             for (const [podID, [resolve, reject]] of Object.entries(subQueries)) {
                 try {
-                    const imgData = this.findStepsImg(json, podID);
-                    resolve({ ...imgData, host: json.host });
+                    this.handleResponse(json, podID)
+                        .then(imgData => resolve({ ...imgData, host: json.host }))
+                        .catch(reject);
                 } catch (e) {
                     reject(e);
                 }
@@ -125,7 +138,7 @@ class Messaging {
                     imageData = await APIHandler.getOne(args.query, args.podID);
                 } catch (err) {
                     ErrorHandler.processError(
-                        `Background script error:\n${err}`,
+                        `API processing failed:\n${err}`,
                         {
                             'Error': err
                         }
