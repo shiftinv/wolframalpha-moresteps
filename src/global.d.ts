@@ -26,7 +26,7 @@ interface APIImageData {
 }
 
 
-interface ExtMessage<I extends { [key: string]: any }, O> {
+interface ExtMessage<I extends { type: string, [key: string]: any }, O> {
     in: I;
     out: O;
 }
