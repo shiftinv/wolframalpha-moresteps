@@ -1,27 +1,5 @@
-type APIImageData = { [key: string]: string | null };
-
 class APIClient {
     private static baseUrl = 'https://api.wolframalpha.com/v2/query';
-
-    static findStepsImg(json: any, podID: string) {
-        let img: any;
-        for (const pod of json.pods) {
-            if (pod.id === podID) {
-                for (const subpod of pod.subpods) {
-                    if (subpod.title.includes('steps') && 'img' in subpod) {
-                        img = subpod.img;
-                        break;
-                    }
-                }
-            }
-            if (img) break;
-        }
-
-        if (!img) {
-            throw new Error(`Couldn\'t find step-by-step image subpod in API response for podID '${podID}'`);
-        }
-        return img;
-    }
 
     static async getJSONDataFromAPI(appid: string, query: string, podIDs: string[]):
             Promise<any> {
@@ -54,102 +32,19 @@ class APIClient {
     }
 }
 
-class APIRequestConsolidator {
-    // make sure to update description in storage.ts when updating this value
-    private static bufferTimeMs = 500;
-
-    private static currentAppID: string;
-    private static currentQuery: { query: string, timer: number } | null;
-    private static currentPodRequests: [string, (d: APIImageData) => void, (e: any) => void][] = [];
-
-    private static sendRequest() {
-        // store variables locally for later use, clear stored values
-        const query = this.currentQuery!.query;
-        const podRequests = this.currentPodRequests;
-        this.currentQuery = null;
-        this.currentPodRequests = [];
-
-        console.log(`Sending request for ${podRequests.length} pod(s)`);
-
-        APIClient.getJSONDataFromAPI(
-            this.currentAppID, query, podRequests.map(r => r[0])
-        ).then((json) => {
-            // try finding image subpod for each podID separately
-            for (const [podID, resolve, reject] of podRequests) {
-                try {
-                    const imgData = APIClient.findStepsImg(json, podID);
-                    resolve({ ...imgData, host: json.host });
-                } catch (e) {
-                    reject(e);
-                }
-            }
-        }).catch((err) => {
-            // reject all promises if request error occurred
-            podRequests.map(r => r[2]).forEach(reject => reject(err));
-        });
-    }
-
-    private static startNewRequest(appid: string, query: string) {
-        console.log('Starting new set of podIDs');
-        this.currentAppID = appid;
-        this.currentQuery = {
-            query: query,
-            timer: setTimeout(this.sendRequest.bind(this), this.bufferTimeMs)
-        };
-    }
-
-    private static addPodID(podID: string): Promise<APIImageData> {
-        return new Promise(
-            (resolve, reject) => this.currentPodRequests.push([podID, resolve, reject])
-        );
-    }
-
-    static async getStepByStepImageDataFromAPI(appid: string, query: string, podID: string):
-            Promise<APIImageData> {
-        const consolidate = await ExtStorage.getOption('consolidate');
-        if (!consolidate) {
-            // send immediately if requests shouldn't get consolidated
-            this.currentAppID = appid;
-            this.currentQuery = { query: query, timer: -1 };
-            const promise = this.addPodID(podID);
-            this.sendRequest();
-            return promise;
-        }
-
-        if (this.currentQuery) {
-            if (this.currentQuery.query !== query) {
-                // finish previous set of podIDs if new query is received
-                console.log('Received new query, sending request for accumulated podIDs');
-                clearTimeout(this.currentQuery.timer);
-                this.sendRequest();
-                this.startNewRequest(appid, query);
-            }
-        } else {
-            // start new set of requests if no query is in progress
-            this.startNewRequest(appid, query);
-        }
-
-        // add new request
-        return this.addPodID(podID);
-    }
-}
-
 class Messaging {
     private static contentMessageHandler(message: any, sender: any):
-            Promise<APIImageData> | undefined {
+            Promise<StepByStepBackgroundMessage['out']> | undefined {
         if (!message.fetchSteps) return;
-        const data = message.fetchSteps;
+        const data = (message as StepByStepBackgroundMessage['in']).fetchSteps;
 
         return ExtStorage.getAppID()
-            .then(async (id) => {
-                if (!id) throw new Error('No AppID set');
-
-                console.debug(`Retrieving data for query \'${data.query}\' (podID: \'${data.podID}\')`);
-                const img = await APIRequestConsolidator.getStepByStepImageDataFromAPI(
-                    id, data.query, data.podID
+            .then(async (appID) => {
+                if (!appID) throw new Error('No AppID set');
+                const json = await APIClient.getJSONDataFromAPI(
+                    appID, data.query, data.podIDs
                 );
-                console.debug(`Received data for query: \'${data.query}\' (podID: \'${data.podID}\'):\n${JSON.stringify(img)}`);
-                return img;
+                return json;
             });
     }
 

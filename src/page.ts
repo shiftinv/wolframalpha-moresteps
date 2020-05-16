@@ -28,20 +28,38 @@ class WebsocketHook {
             return false;
         }
 
-        // handle stepByStep packets only
-        if (obj.type !== 'stepByStep') return false;
-        // don't try to replace solutions with multiple steps
-        if ('deploybuttonstates' in obj.pod
-            || 'stepbystepcontenttype' in obj.pod.subpods[0]) return false;
+        switch (obj.type) {
+        case 'pods':
+            // collect pods with stepbystep subpods
+            const podIDs: string[] = [];
+            for (const pod of obj.pods) {
+                const sbsState = pod.deploybuttonstates?.find((s: any) => s.stepbystep === true);
+                if (sbsState) {
+                    podIDs.push(pod.id);
+                }
+            }
 
-        console.info(
-            'got packet:\n',
-            obj
-        );
+            // prefetch
+            if (podIDs.length > 0) {
+                Messaging.sendMessage<StepByStepPrefetchMessage>({
+                    type: 'msImageDataPrefetch',
+                    query: obj.input,
+                    podIDs: podIDs
+                });
+            }
+            return false;
 
-        // request image data from content script
-        Messaging.sendMessage({ type: 'msImageDataReq', query: obj.query, podID: obj.pod.id })
-            .then((imageData) => {
+        case 'stepByStep':
+            // don't try to replace solutions with multiple steps
+            if ('deploybuttonstates' in obj.pod
+                || 'stepbystepcontenttype' in obj.pod.subpods[0]) return false;
+
+            // request image data from content script
+            Messaging.sendMessage<StepByStepContentMessage>({
+                type: 'msImageDataReq',
+                query: obj.query,
+                podID: obj.pod.id
+            }).then((imageData) => {
                 try {
                     if (imageData) {
                         obj.host = imageData.host;
@@ -68,7 +86,11 @@ class WebsocketHook {
                 continueProcessing();
             });
 
-        return true;
+            return true;
+
+        default:
+            return false;
+        }
     }
 
     private static enqueueMessageForListener(listener: WebSocketListener, ev: MessageEvent) {
@@ -168,11 +190,11 @@ class Messaging {
         });
     }
 
-    static async sendMessage(data: { [key: string]: any }): Promise<any> {
+    static async sendMessage<T extends ExtMessage<any, any>>(args: T['in']): Promise<T['out']> {
         const seq = this.sequence++;
         const promise = new Promise(resolve => this.dataCallbacks[seq] = resolve);
         window.postMessage(
-            { seq: seq, ...data },
+            { seq: seq, ...args },
             '*'
         );
         return promise;

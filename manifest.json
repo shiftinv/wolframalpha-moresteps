@@ -23,6 +23,7 @@
             ],
             "js": [
                 "js/lib/webextension-polyfill@0.6.0.js",
+                "js/storage.js",
                 "js/errorhandler.js",
                 "js/content.js"
             ],

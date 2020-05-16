@@ -1,44 +1,145 @@
-class Messaging {
+class APIHandler {
     private static stepsPromises: { [key: string]: Promise<any> } = {};
 
-    private static async backgroundFetchSteps(query: string, podID: string): Promise<any> {
+    private static findStepsImg(json: APIResponse, podID: string) {
+        const img = json.pods
+            .find(p => p.id === podID)?.subpods
+            .find(s => s.title.includes('steps') && 'img' in s)?.img;
+
+        if (!img) {
+            throw new Error(`Couldn\'t find step-by-step image subpod in API response for podID '${podID}'`);
+        }
+        return img;
+    }
+
+    private static getPromise(
+        query: string,
+        podID: string,
+        initHandler: (resolve: (data: APIImageData) => void, reject: (error: any) => void) => any
+    ): Promise<APIImageData> {
         const cacheKey = `${query}:::${podID}`;
         const prev = this.stepsPromises[cacheKey];
         if (prev) {
-            console.info(`Found existing promise for query \'${query}\' (podID: \'${podID}\')`);
+            console.debug(`Found existing promise for query \'${query}\' (podID: \'${podID}\')`);
             return prev;
         }
 
-        // request image data from background script
-        const p = browser.runtime.sendMessage({ fetchSteps: { query: query, podID: podID } });
+        const p = new Promise(initHandler);
         this.stepsPromises[cacheKey] = p;
         return p;
+    }
+
+    static getMultiple(query: string, podIDs: string[]): Promise<APIImageData>[] {
+        // array of promises, returned to caller
+        const promises: Promise<APIImageData>[] = [];
+        // used for resolving the promises, {podID: [resolve, reject]}
+        const subQueries: {
+            [key: string]: [(data: APIImageData) => void, (error: any) => void]
+        } = {};
+
+        // build array of promises
+        for (const podID of podIDs) {
+            // getPromise returns an existing promise, or creates a new one and
+            //  calls the handler, in which case the podID also gets added to `subQueries`
+            promises.push(this.getPromise(query, podID, (resolve, reject) => {
+                subQueries[podID] = [resolve, reject];
+            }));
+        }
+
+        const requestPodIDs = Object.keys(subQueries);
+        if (requestPodIDs.length === 0) {
+            // everything is already cached/in progress
+            return promises;
+        }
+
+        // send message to background script
+        console.log(`Retrieving data for query \'${query}\' (podIDs: ${requestPodIDs})`);
+        Messaging.sendMessage<StepByStepBackgroundMessage>({
+            fetchSteps: {
+                query: query,
+                podIDs: requestPodIDs
+            }
+        }).then((json) => {
+            console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
+            // try finding image subpod for each podID individually
+            for (const [podID, [resolve, reject]] of Object.entries(subQueries)) {
+                try {
+                    const imgData = this.findStepsImg(json, podID);
+                    resolve({ ...imgData, host: json.host });
+                } catch (e) {
+                    reject(e);
+                }
+            }
+        }).catch((err) => {
+            // reject all promises if message error occurred
+            Object.values(subQueries).map(s => s[1]).forEach(reject => reject(err));
+        });
+
+        return promises;
+    }
+
+    static getOne(query: string, podID: string): Promise<APIImageData> {
+        return this.getMultiple(query, [podID])[0];
+    }
+}
+
+class Messaging {
+    static async sendMessage<T extends ExtMessage<any, any>>(args: T['in']): Promise<T['out']> {
+        return browser.runtime.sendMessage(args);
     }
 
     static init() {
         // handle requests from page script
         window.addEventListener('message', async (event) => {
             if (event.source !== window) return;
-            if (event.data.type !== 'msImageDataReq') return;
 
-            // get new image data
-            let imageData = null;
-            try {
-                imageData = await this.backgroundFetchSteps(event.data.query, event.data.podID);
-            } catch (err) {
-                ErrorHandler.processError(
-                    `Background script error:\n${err}`,
-                    {
-                        'Error': err
+            switch (event.data.type) {
+            case 'msImageDataPrefetch': {
+                const args = event.data as StepByStepPrefetchMessage['in'];
+                // don't really care about results, any errors will be sent back later on
+                //  as the promises (and therefore results/errors) are cached
+                (async () => {
+                    const prefetch = await ExtStorage.getOption('prefetch');
+                    if (!prefetch) return;
+
+                    console.info(`Prefetching ${args.podIDs.length} stepByStep image(s)`);
+                    const consolidate = await ExtStorage.getOption('consolidate');
+                    if (consolidate) {
+                        // send as one request
+                        APIHandler.getMultiple(args.query, args.podIDs);
+                    } else {
+                        // send as multiple requests
+                        for (const podID of args.podIDs) {
+                            APIHandler.getOne(args.query, podID);
+                        }
                     }
-                );
+                })();
+                break;
             }
+            case 'msImageDataReq': {
+                const args = event.data as StepByStepContentMessage['in'];
 
-            // send response with (new) data
-            window.postMessage(
-                { seq: event.data.seq, type: 'msImageDataResp', data: imageData },
-                '*'
-            );
+                // get image data
+                let imageData: StepByStepContentMessage['out'] = null;
+                try {
+                    imageData = await APIHandler.getOne(args.query, args.podID);
+                } catch (err) {
+                    ErrorHandler.processError(
+                        `Background script error:\n${err}`,
+                        {
+                            'Error': err
+                        }
+                    );
+                }
+
+                // send response
+                window.postMessage(
+                    { seq: event.data.seq, type: 'msImageDataResp', data: imageData },
+                    '*'
+                );
+                break;
+            }
+            }
         });
     }
 }
