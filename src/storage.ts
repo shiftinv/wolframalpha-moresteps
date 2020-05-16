@@ -25,8 +25,8 @@ class ExtStorage {
         },
         'consolidate+async': {
             text: 'Retrieve results asynchronously',
-            default: true,
-            description: '[Requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis will compensate for some of the delay introduced by consolidation, and does not count towards API usage'
+            default: false,
+            description: '[Requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis may marginally reduce some of the delay introduced by consolidation, and does not count towards API usage'
         }
     });
 
