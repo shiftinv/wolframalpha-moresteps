@@ -5,6 +5,8 @@ class APIClient {
         output: 'json'
     };
 
+    private static asyncPodUrls: Set<string> = new Set();
+
     static async getJSONDataFromAPI(appid: string, query: string, podIDs: string[]):
             Promise<APIResponse> {
         if (podIDs.length === 0) {
@@ -21,8 +23,8 @@ class APIClient {
             params.append('includepodid', podID);
         }
 
-        const reqAsync = await ExtStorage.getOption('consolidate+async');
-        if (podIDs.length > 1 && reqAsync) {
+        const reqAsync = podIDs.length > 1 && await ExtStorage.getOption('consolidate+async');
+        if (reqAsync) {
             params.append('async', 'true');
         }
 
@@ -37,10 +39,22 @@ class APIClient {
             throw new Error(errText);
         }
 
+        // store async pod urls for subsequent verification
+        if (reqAsync) {
+            const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
+            resultJson.pods.filter(isAsync).forEach(p => this.asyncPodUrls.add(p.async));
+        }
+
         return resultJson;
     }
 
     static async getAsyncPod(url: string): Promise<APIResponseAsync> {
+        // messages from the content script are not trusted, only send requests to
+        //  previously seen urls to prevent access to arbitrary urls
+        if (!this.asyncPodUrls.has(url)) {
+            throw new Error(`Refusing to request unknown url \'${url}\'`);
+        }
+
         const reqUrl = new URL(url);
         for (const [k, v] of Object.entries(this.commonParams)) {
             reqUrl.searchParams.append(k, v);
