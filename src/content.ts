@@ -28,9 +28,10 @@ class APIHandler {
     private static getPromise(
         query: string,
         podID: string,
+        assumptions: string[],
         initHandler: (resolve: (data: APIImageData) => void, reject: (error: any) => void) => any
     ): Promise<APIImageData> {
-        const cacheKey = `${query}:::${podID}`;
+        const cacheKey = `${query}:::${podID}:::${assumptions}`;
         const prev = this.stepsPromises[cacheKey];
         if (prev) {
             console.debug(`Found existing promise for query \'${query}\' (podID: \'${podID}\')`);
@@ -55,7 +56,7 @@ class APIHandler {
         for (const podID of podIDs) {
             // getPromise returns an existing promise, or creates a new one and
             //  calls the handler, in which case the podID also gets added to `subQueries`
-            promises.push(this.getPromise(query, podID, (resolve, reject) => {
+            promises.push(this.getPromise(query, podID, assumptions, (resolve, reject) => {
                 subQueries[podID] = [resolve, reject];
             }));
         }
