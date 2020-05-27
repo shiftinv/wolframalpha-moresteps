@@ -2,6 +2,7 @@ interface Option {
     text: string;
     default: boolean;
     description?: string;
+    resetDays?: number;
 }
 type OptionName = keyof typeof ExtStorage.options;
 // workaround for object literal key type inference
@@ -31,7 +32,8 @@ class ExtStorage {
         'includepodid': {
             text: 'Only request relevant results',
             default: true,
-            description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type,\ninstead of requesting everything; this significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists'
+            description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type,\ninstead of requesting everything; this significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists',
+            resetDays: 3
         }
     });
 
@@ -54,9 +56,29 @@ class ExtStorage {
 
     static async setOption(name: OptionName, value: boolean): Promise<void> {
         const key = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}`;
+        const changeTimeKey = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}__changeTime`;
         return this.storage.set({
-            [key]: value as any
+            [key]: value as any,
+            [changeTimeKey]: Date.now()
         });
+    }
+
+    static async checkResets(): Promise<void> {
+        const resetOptions = (Object.entries(this.options) as [OptionName, Option][])
+            .filter(([name, meta]) => meta.resetDays !== undefined);
+        const now = Date.now();
+        for (const [name, meta] of resetOptions) {
+            const changeTimeKey = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}__changeTime`;
+            const changeTime = (await this.storage.get(changeTimeKey))[changeTimeKey] as
+                number | undefined;
+            if (!changeTime) continue;
+
+            const diff = Math.floor((now - changeTime) / (24 * 60 * 60 * 1000));
+            if (diff >= meta.resetDays!) {
+                console.log(`Resetting option \'${name}\' to default value \'${meta.default}\'`);
+                await this.setOption(name, meta.default);
+            }
+        }
     }
 }
 

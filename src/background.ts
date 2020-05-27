@@ -127,5 +127,7 @@ class Messaging {
 
 Messaging.init();
 
+ExtStorage.checkResets();
+
 
 export {};

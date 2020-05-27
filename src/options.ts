@@ -57,7 +57,12 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
     });
 
     // add tooltip
-    if (option.description) div.title = option.description;
+    if (option.description) {
+        div.title = option.description;
+        if (option.resetDays !== undefined) {
+            div.title += `\n(Resets to default value [${option.default}] after ${option.resetDays} days)`;
+        }
+    }
 
     // indent if suboption
     if (key.includes('+')) div.classList.add('suboption');
