@@ -27,6 +27,11 @@ class ExtStorage {
             text: 'Retrieve results asynchronously',
             default: false,
             description: '[Requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis may marginally reduce some of the delay introduced by consolidation, and does not count towards API usage'
+        },
+        'includepodid': {
+            text: 'Only request relevant results',
+            default: true,
+            description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type,\ninstead of requesting everything; this significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists'
         }
     });
 

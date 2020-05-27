@@ -14,7 +14,8 @@ class APIHandler {
         if (!pods) {
             // this can sometimes happen when the includepodid/excludepodid parameters are broken;
             //  there's nothing one can do about it, apart from waiting for the API to get fixed :/
-            throw new Error(`Response for pod ID \'${podID}\' didn't contain any result pods`);
+            throw new Error(`Response for pod ID \'${podID}\' didn't contain any result pods`
+                + `\nTry temporarily disabling the "${ExtStorage.options['includepodid'].text}" option`);
         }
         let pod = pods.find(p => p.id === podID) as APIPod | undefined;
         if (!pod) {

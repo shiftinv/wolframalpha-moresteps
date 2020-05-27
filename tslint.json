@@ -13,7 +13,8 @@
     "no-increment-decrement": false,
     "no-console": false,
     "max-classes-per-file": false,
-    "object-literal-key-quotes": false
+    "object-literal-key-quotes": false,
+    "no-string-literal": false
   },
   "linterOptions": {
     "exclude": [

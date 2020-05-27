@@ -46,9 +46,10 @@ class APIClient {
             input: query,
             ...this.commonParams
         });
+        const useIncludePodID = await ExtStorage.getOption('includepodid');
         for (const podID of podIDs) {
             params.append('podstate', `${podID}__Step-by-step solution`);
-            params.append('includepodid', podID);
+            if (useIncludePodID) params.append('includepodid', podID);
         }
         for (const assumption of assumptions) {
             params.append('assumption', this.encodeAssumption(assumption));
