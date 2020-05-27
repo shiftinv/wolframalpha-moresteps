@@ -3,6 +3,7 @@ type WebSocketListener = (this: WebSocket, ev: MessageEvent) => any;
 
 class WebsocketHook {
     private static webSocketQueues = new Map<WebSocketListener, Map<MessageEvent, boolean>>();
+    private static currentAssumptions: string[] = [];
     static newImages = new Set<string>();
 
     private static once<A extends any[], R, T>(func: (this: T, ...arg: A) => R):
@@ -21,19 +22,27 @@ class WebsocketHook {
         return o;
     }
 
-    private static websocketMessageEventHook(event: MessageEventRW, continueProcessing: () => any):
-            boolean {
-        let obj: any;
+    private static tryParseJSON(jsonStr: string): any {
         try {
-            obj = JSON.parse(event.data);
+            return JSON.parse(jsonStr);
         } catch (err) {
             ErrorHandler.processError(
                 `Error parsing WebSocket json`,
                 {
                     'Error': err,
-                    'JSON string': event.data
+                    'JSON string': jsonStr
                 }
             );
+            throw err;
+        }
+    }
+
+    private static websocketMessageEventHook(event: MessageEventRW, continueProcessing: () => any):
+            boolean {
+        let obj: any;
+        try {
+            obj = this.tryParseJSON(event.data);
+        } catch (err) {
             return false;
         }
 
@@ -53,7 +62,8 @@ class WebsocketHook {
                 Messaging.sendMessage<StepByStepPrefetchMessage>({
                     type: 'msImageDataPrefetch',
                     query: obj.input,
-                    podIDs: podIDs
+                    podIDs: podIDs,
+                    assumptions: this.currentAssumptions
                 });
             }
             return false;
@@ -67,7 +77,8 @@ class WebsocketHook {
             Messaging.sendMessage<StepByStepContentMessage>({
                 type: 'msImageDataReq',
                 query: obj.query,
-                podID: obj.pod.id
+                podID: obj.pod.id,
+                assumptions: this.currentAssumptions
             }).then((imageData) => {
                 try {
                     if (imageData) {
@@ -100,6 +111,27 @@ class WebsocketHook {
         default:
             return false;
         }
+    }
+
+    private static webSocketSendHook(data: any) {
+        // always reset assumptions
+        this.currentAssumptions = [];
+
+        // `data` is probably always a string, just making sure
+        if (typeof data !== 'string') return;
+
+        let obj: any;
+        try {
+            obj = this.tryParseJSON(data);
+        } catch (err) {
+            return;
+        }
+
+        // store assumptions from message
+        const assumptions = obj.assumption;
+        if (!Array.isArray(assumptions) || assumptions.length === 0) return;
+        this.currentAssumptions = assumptions;
+        console.info(`Got query assumptions: `, assumptions);
     }
 
     private static enqueueMessageForListener(listener: WebSocketListener, ev: MessageEvent) {
@@ -171,6 +203,7 @@ class WebsocketHook {
 
     static init() {
         console.info('Initializing websocket hook');
+
         const origAddEventListener = window.WebSocket.prototype.addEventListener;
         window.WebSocket.prototype.addEventListener =
             function (type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]) {
@@ -178,6 +211,13 @@ class WebsocketHook {
                     ? WebsocketHook.buildNewListener(listener)  // hook listener
                     : listener;
                 return origAddEventListener.apply(this, [type, newListener, ...args] as any);
+            };
+
+        const origSend = window.WebSocket.prototype.send;
+        window.WebSocket.prototype.send =
+            function (data: any): void {
+                WebsocketHook.webSocketSendHook(data);
+                return origSend.apply(this, [data]);
             };
     }
 }

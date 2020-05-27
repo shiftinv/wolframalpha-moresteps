@@ -42,7 +42,8 @@ class APIHandler {
         return p;
     }
 
-    static getMultiple(query: string, podIDs: string[]): Promise<APIImageData>[] {
+    static getMultiple(query: string, podIDs: string[], assumptions: string[]):
+            Promise<APIImageData>[] {
         // array of promises, returned to caller
         const promises: Promise<APIImageData>[] = [];
         // used for resolving the promises, {podID: [resolve, reject]}
@@ -70,7 +71,8 @@ class APIHandler {
         Messaging.sendMessage<StepByStepBackgroundMessage>({
             type: 'fetchSteps',
             query: query,
-            podIDs: requestPodIDs
+            podIDs: requestPodIDs,
+            assumptions: assumptions
         }).then((json) => {
             console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
             // try finding image subpod for each podID individually
@@ -91,8 +93,8 @@ class APIHandler {
         return promises;
     }
 
-    static getOne(query: string, podID: string): Promise<APIImageData> {
-        return this.getMultiple(query, [podID])[0];
+    static getOne(query: string, podID: string, assumptions: string[]): Promise<APIImageData> {
+        return this.getMultiple(query, [podID], assumptions)[0];
     }
 }
 
@@ -119,11 +121,11 @@ class Messaging {
                     const consolidate = await ExtStorage.getOption('consolidate');
                     if (consolidate) {
                         // send as one request
-                        APIHandler.getMultiple(args.query, args.podIDs);
+                        APIHandler.getMultiple(args.query, args.podIDs, args.assumptions);
                     } else {
                         // send as multiple requests
                         for (const podID of args.podIDs) {
-                            APIHandler.getOne(args.query, podID);
+                            APIHandler.getOne(args.query, podID, args.assumptions);
                         }
                     }
                 })();
@@ -135,7 +137,7 @@ class Messaging {
                 // get image data
                 let imageData: StepByStepContentMessage['out'] = null;
                 try {
-                    imageData = await APIHandler.getOne(args.query, args.podID);
+                    imageData = await APIHandler.getOne(args.query, args.podID, args.assumptions);
                 } catch (err) {
                     ErrorHandler.processError(
                         `API processing failed:\n${err}`,

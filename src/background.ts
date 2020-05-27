@@ -7,8 +7,36 @@ class APIClient {
 
     private static asyncPodUrls: Set<string> = new Set();
 
-    static async getJSONDataFromAPI(appid: string, query: string, podIDs: string[]):
-            Promise<APIResponse> {
+
+    private static encodeAssumption(str: string): string {
+        // this is only based on observations and may not be complete
+        const replacements = {
+            '->': '_',
+            '{': '*',
+            '}': '-',
+            ',': '.',
+            ' ': ''
+        };
+
+        // replace characters
+        let newStr = str;
+        for (const [pattern, repl] of Object.entries(replacements)) {
+            // replace everywhere that's not enclosed in double quotes
+            newStr = newStr.replace(new RegExp(`"[^"]+"|(${pattern})`, 'g'), (match, group) => {
+                // if group is defined, pattern matched; if not, left side of alternation matched
+                return group ? repl : match;
+            });
+        }
+
+        // remove quotes
+        newStr = newStr.replace(/"/g, '');
+
+        return newStr;
+    }
+
+    static async getJSONDataFromAPI(
+        appid: string, query: string, podIDs: string[], assumptions: string[]
+    ): Promise<APIResponse> {
         if (podIDs.length === 0) {
             throw new Error('Invalid number of podIDs');
         }
@@ -21,6 +49,9 @@ class APIClient {
         for (const podID of podIDs) {
             params.append('podstate', `${podID}__Step-by-step solution`);
             params.append('includepodid', podID);
+        }
+        for (const assumption of assumptions) {
+            params.append('assumption', this.encodeAssumption(assumption));
         }
 
         const reqAsync = podIDs.length > 1 && await ExtStorage.getOption('consolidate+async');
@@ -75,7 +106,7 @@ class Messaging {
                 .then(async (appID) => {
                     if (!appID) throw new Error('No AppID set');
                     const json = await APIClient.getJSONDataFromAPI(
-                        appID, args.query, args.podIDs
+                        appID, args.query, args.podIDs, args.assumptions
                     );
                     return json as StepByStepBackgroundMessage['out'];
                 });

@@ -26,6 +26,14 @@ interface APIImageData {
 }
 
 
+interface QueryData {
+    query: string;
+    podID: string;
+    assumptions: string[];
+}
+type QueryDataMulti = Omit<QueryData, 'podID'> & { podIDs: string[] };
+
+
 interface ExtMessage<I extends { type: string, [key: string]: any }, O> {
     in: I;
     out: O;
@@ -33,11 +41,7 @@ interface ExtMessage<I extends { type: string, [key: string]: any }, O> {
 
 // content script <---> background script (main)
 interface StepByStepBackgroundMessage extends ExtMessage<
-    {
-        type: 'fetchSteps',
-        query: string,
-        podIDs: string[]
-    },
+    { type: 'fetchSteps' } & QueryDataMulti,
     APIResponse
 > {}
 
@@ -52,20 +56,12 @@ interface StepByStepAsyncPodMessage extends ExtMessage<
 
 // page script <---> content script (prefetch)
 interface StepByStepPrefetchMessage extends ExtMessage<
-    {
-        type: 'msImageDataPrefetch',
-        query: string,
-        podIDs: string[]
-    },
+    { type: 'msImageDataPrefetch' } & QueryDataMulti,
     void
 > {}
 
 // page script <---> content script (single)
 interface StepByStepContentMessage extends ExtMessage<
-    {
-        type: 'msImageDataReq',
-        query: string,
-        podID: string
-    },
+    { type: 'msImageDataReq' } & QueryData,
     APIImageData | null
 > {}
