@@ -48,6 +48,20 @@ jobs:
           release_name: ${{ github.ref }}
           prerelease: false
           draft: true
+          body: |
+            #### Added
+            -
+
+            #### Changed
+            -
+
+            #### Fixed
+            -
+
+            ---
+            Chrome extension: ${{ secrets.EXT_URL_CHROME }}
+            Firefox extension: ${{ secrets.EXT_URL_FIREFOX }}
+          # urls are secrets to allow changing them without having to modify the workflow file
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
