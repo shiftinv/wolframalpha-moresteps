@@ -73,7 +73,7 @@ class APIClient {
         // store async pod urls for subsequent verification
         if (reqAsync) {
             const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
-            resultJson.pods.filter(isAsync).forEach(p => this.asyncPodUrls.add(p.async));
+            resultJson.pods?.filter(isAsync).forEach(p => this.asyncPodUrls.add(p.async));
         }
 
         return resultJson;

@@ -10,8 +10,16 @@ class APIHandler {
     }
 
     private static async handleResponse(json: APIResponse, podID: string): Promise<APIImageData> {
-        let pod = json.pods.find(p => p.id === podID) as APIPod;
-        if (!pod) throw new Error(`Couldn't find pod ID \'${podID}\' in API response`);
+        const pods = json.pods;
+        if (!pods) {
+            // this can sometimes happen when the includepodid/excludepodid parameters are broken;
+            //  there's nothing one can do about it, apart from waiting for the API to get fixed :/
+            throw new Error(`Response for pod ID \'${podID}\' didn't contain any result pods`);
+        }
+        let pod = pods.find(p => p.id === podID) as APIPod | undefined;
+        if (!pod) {
+            throw new Error(`Couldn't find pod ID \'${podID}\' in API response`);
+        }
 
         const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
         if (isAsync(pod)) {
@@ -20,7 +28,7 @@ class APIHandler {
                 type: 'fetchAsyncPod',
                 url: pod.async
             });
-            pod = result.pods[0] as APIPodSync;
+            pod = result.pods![0] as APIPodSync;
         }
         return this.findStepsImg(pod, podID);
     }

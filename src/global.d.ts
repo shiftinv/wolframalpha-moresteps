@@ -13,7 +13,7 @@ interface APIPodAsync extends APIPodBase {
 type APIPod = APIPodSync | APIPodAsync;
 
 interface APIResponseAsync {
-    pods: APIPod[];
+    pods?: APIPod[];
 }
 interface APIResponse extends APIResponseAsync {
     host: string;
