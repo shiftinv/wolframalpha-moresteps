@@ -5,6 +5,15 @@ class WebsocketHook {
     private static webSocketQueues = new Map<WebSocketListener, Map<MessageEvent, boolean>>();
     static newImages = new Set<string>();
 
+    private static once<A extends any[], R, T>(func: (this: T, ...arg: A) => R):
+            ((this: T, ...arg: A) => R) {
+        let done = false;
+        let val: R;
+        return function (this: T, ...args: A) {
+            return done ? val : ((done = true), (val = func.apply(this, args)));
+        };
+    }
+
     private static fixMessageEventData(o: MessageEvent): MessageEventRW {
         const tmpData = o.data;
         Object.defineProperty(o, 'data', { writable: true });
@@ -139,8 +148,8 @@ class WebsocketHook {
             const newEvent = WebsocketHook.fixMessageEventData(event);
 
             WebsocketHook.enqueueMessageForListener(origListener, newEvent);
-            const continueProcessing = () =>
-                WebsocketHook.handleMessageForListener(origListener, newEvent, this);
+            const continueProcessing = WebsocketHook.once(() =>
+                WebsocketHook.handleMessageForListener(origListener, newEvent, this));
 
             try {
                 // returns true if event will be handled asynchronously
@@ -155,6 +164,7 @@ class WebsocketHook {
                         'Event': newEvent
                     }
                 );
+                continueProcessing();
             }
         };
     }
