@@ -1,3 +1,5 @@
+$modal-border-radius: 8px;
+
 #moresteps-alertcontainer {
     position: fixed;
     z-index: 2147483647;
@@ -8,10 +10,10 @@
     max-width: 25%;
 
     #moresteps-alertmodal {
-        padding: 12px 16px;
+        padding: 12px 16px 12px 20px;
         margin: 16px 0;
 
-        border-radius: 8px;
+        border-radius: $modal-border-radius;
         box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.5);
 
         background-color: #ff3030;
@@ -23,8 +25,21 @@
         display: flex;
         align-items: center;
         flex-direction: row;
+        position: relative;
 
         animation: fadein 0.5s;
+
+        & > .modal-repeat-count {
+            font-size: smaller;
+
+            position: absolute;
+            top: 0;
+            left: 0;
+
+            padding: 4px;
+            background-color: darkorange;
+            border-radius: $modal-border-radius 0 4px 0;
+        }
 
         & > .modal-content {
             width: 100%;
