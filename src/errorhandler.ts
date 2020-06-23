@@ -60,6 +60,11 @@ class ErrorHandler {
         }
 
         last.repeatCount.element.textContent = `${++last.repeatCount.count}`;
+
+        const container = this.getContainer();
+        if (!container.contains(last.modal)) {
+            container.appendChild(last.modal);
+        }
     }
 
     static processError(text: string, context: { [key: string]: any }) {
