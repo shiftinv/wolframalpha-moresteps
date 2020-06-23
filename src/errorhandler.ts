@@ -2,14 +2,6 @@ class ErrorHandler {
     private static readonly ALERT_CONTAINER_ID = `moresteps-alertcontainer`;
     private static readonly ALERT_MODAL_ID = `moresteps-alertmodal`;
     private static container?: HTMLDivElement;
-    private static lastError?: {
-        modal: HTMLDivElement,
-        text: string,
-        repeatCount?: {
-            element: HTMLSpanElement,
-            count: number
-        }
-    };
 
     private static getContainer(): HTMLDivElement {
         if (!this.container) {
@@ -24,7 +16,7 @@ class ErrorHandler {
         return this.container;
     }
 
-    private static createNewModal(text: string): HTMLDivElement {
+    private static createNewModal(text: string): void {
         const container = this.getContainer();
 
         const modal = document.createElement('div');
@@ -42,29 +34,21 @@ class ErrorHandler {
         modal.appendChild(modalContent);
         modal.appendChild(closeButton);
         container.appendChild(modal);
-
-        return modal;
     }
 
-    private static incrementLastRepeatCount(): void {
-        const last = this.lastError!;
-        if (!last.repeatCount) {
-            const repeatElem = document.createElement('span');
-            repeatElem.classList.add('modal-repeat-count');
-            last.modal.prepend(repeatElem);
-
-            last.repeatCount = {
-                element: repeatElem,
-                count: 1
-            };
+    private static incrementLastRepeatCount(modal: HTMLElement): void {
+        let repeatCountElem = modal.querySelector('.modal-repeat-count');
+        if (!repeatCountElem) {
+            repeatCountElem = document.createElement('span');
+            repeatCountElem.classList.add('modal-repeat-count');
+            modal.prepend(repeatCountElem);
         }
 
-        last.repeatCount.element.textContent = `${++last.repeatCount.count}`;
-
-        const container = this.getContainer();
-        if (!container.contains(last.modal)) {
-            container.appendChild(last.modal);
-        }
+        const repeatCount = parseInt(
+            repeatCountElem.textContent ? repeatCountElem.textContent : '1',
+            10
+        );
+        repeatCountElem.textContent = `${repeatCount + 1}`;
     }
 
     static processError(text: string, context: { [key: string]: any }) {
@@ -76,16 +60,14 @@ class ErrorHandler {
         }
         console.error(...args);
 
-        if (this.lastError?.text === text) {
+        const lastErrorModal = this.getContainer().lastElementChild as HTMLDivElement | null;
+
+        if (lastErrorModal?.querySelector('.modal-content')?.textContent === text) {
             // increment repeat counter if error is identical to previous one
-            this.incrementLastRepeatCount();
+            this.incrementLastRepeatCount(lastErrorModal);
         } else {
             // show error on UI
-            const newModal = this.createNewModal(text);
-            this.lastError = {
-                modal: newModal,
-                text: text
-            };
+            this.createNewModal(text);
         }
     }
 }
