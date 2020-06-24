@@ -33,6 +33,7 @@ submitButton.addEventListener('click', async (e) => {
 
 // handle options checkboxes
 const optionsDiv = document.getElementById('options') as HTMLDivElement;
+const optionsMiscDiv = document.getElementById('options-misc') as HTMLDivElement;
 for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, Option][]) {
     const div = document.createElement('div');
     const label = document.createElement('label');
@@ -69,5 +70,7 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
 
     div.appendChild(checkbox);
     div.appendChild(label);
-    optionsDiv.appendChild(div);
+
+    const targetDiv = key.startsWith('misc-') ? optionsMiscDiv : optionsDiv;
+    targetDiv.appendChild(div);
 }
