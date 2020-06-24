@@ -34,6 +34,11 @@ class ExtStorage {
             default: true,
             description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type,\ninstead of requesting everything; this significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists',
             resetDays: 3
+        },
+        'misc-hidebanner': {
+            text: 'Hide top banner by default',
+            default: false,
+            description: 'Automatically hides the top banner on the website'
         }
     });
 

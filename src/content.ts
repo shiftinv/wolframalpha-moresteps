@@ -188,5 +188,12 @@ Messaging.init();
 injectScript('js/errorhandler.js');
 injectScript('js/page.js');
 
+// hide top banner by default
+// (this can lose the race to componentDidMount if storage access takes longer than ~50ms :/ )
+ExtStorage.getOption('misc-hidebanner').then((hide) => {
+    if (hide) {
+        sessionStorage.setItem('banner', 'true');
+    }
+});
 
 export {};
