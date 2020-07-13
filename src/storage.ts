@@ -37,7 +37,7 @@ class ExtStorage {
         },
         'misc-hidebanner': {
             text: 'Hide top banner by default',
-            default: false,
+            default: true,
             description: 'Automatically hides the top banner on the website'
         }
     });
