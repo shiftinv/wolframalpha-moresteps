@@ -9,15 +9,8 @@ body {
 }
 
 .ms-options {
-    > div {
-        &[title] label {
-            text-decoration: underline;
-            text-decoration-style: dotted;
-        }
-
-        &.suboption {
-            margin-left: 16px;
-        }
+    > div.suboption {
+        margin-left: 16px;
     }
     label, input {
         vertical-align: middle;
