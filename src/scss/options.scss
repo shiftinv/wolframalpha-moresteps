@@ -8,7 +8,7 @@ body {
     color: green;
 }
 
-#options {
+.ms-options {
     > div {
         &[title] label {
             text-decoration: underline;
