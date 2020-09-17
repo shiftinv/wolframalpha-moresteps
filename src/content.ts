@@ -74,34 +74,32 @@ class APIHandler {
         }
 
         const requestPodIDs = Object.keys(subQueries);
-        if (requestPodIDs.length === 0) {
-            // everything is already cached/in progress
-            return promises;
-        }
-
-        // send message to background script
-        console.log(`Retrieving data for query \'${query}\' (podIDs: ${requestPodIDs})`);
-        Messaging.sendMessage<StepByStepBackgroundMessage>({
-            type: 'fetchSteps',
-            query: query,
-            podIDs: requestPodIDs,
-            assumptions: assumptions
-        }).then((json) => {
-            console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
-            // try finding image subpod for each podID individually
-            for (const [podID, [resolve, reject]] of Object.entries(subQueries)) {
-                try {
-                    this.handleResponse(json, podID)
-                        .then(imgData => resolve({ ...imgData, host: json.host }))
-                        .catch(reject);
-                } catch (e) {
-                    reject(e);
+        // if length === 0, everything is already cached/in progress
+        if (requestPodIDs.length > 0) {
+            // send message to background script
+            console.log(`Retrieving data for query \'${query}\' (podIDs: ${requestPodIDs})`);
+            Messaging.sendMessage<StepByStepBackgroundMessage>({
+                type: 'fetchSteps',
+                query: query,
+                podIDs: requestPodIDs,
+                assumptions: assumptions
+            }).then((json) => {
+                console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
+                // try finding image subpod for each podID individually
+                for (const [podID, [resolve, reject]] of Object.entries(subQueries)) {
+                    try {
+                        this.handleResponse(json, podID)
+                            .then(imgData => resolve({ ...imgData, host: json.host }))
+                            .catch(reject);
+                    } catch (e) {
+                        reject(e);
+                    }
                 }
-            }
-        }).catch((err) => {
-            // reject all promises if message error occurred
-            Object.values(subQueries).map(s => s[1]).forEach(reject => reject(err));
-        });
+            }).catch((err) => {
+                // reject all promises if message error occurred
+                Object.values(subQueries).map(s => s[1]).forEach(reject => reject(err));
+            });
+        }
 
         return promises;
     }
