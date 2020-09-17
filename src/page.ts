@@ -2,7 +2,6 @@ type MessageEventRW = Omit<MessageEvent, 'data'> & { data: any };
 type WebSocketListener = (this: WebSocket, ev: MessageEvent) => any;
 
 class WebsocketHook {
-    private static webSocketQueues = new Map<WebSocketListener, Map<MessageEvent, boolean>>();
     private static currentAssumptions: string[] = [];
     static newImages = new Set<string>();
 
@@ -134,54 +133,13 @@ class WebsocketHook {
         console.info(`Got query assumptions: `, assumptions);
     }
 
-    private static enqueueMessageForListener(listener: WebSocketListener, ev: MessageEvent) {
-        if (!this.webSocketQueues.has(listener)) {
-            this.webSocketQueues.set(listener, new Map());
-        }
-        const queue = this.webSocketQueues.get(listener)!;
-        queue.set(ev, false);
-    }
-
-    private static handleMessageForListener(
-        listener: WebSocketListener,
-        ev: MessageEvent,
-        thisArg: WebSocket
-    ) {
-        const queue = this.webSocketQueues.get(listener)!;
-        const currStatus = queue.get(ev);
-        if (currStatus !== false) {
-            // don't handle
-            //   - already finished messages (status: true)
-            //   - messages not contained in queue (status: undefined)
-            // (just to make sure, in theory this should never happen)
-            ErrorHandler.processError(
-                `Unexpected status for event in queue: ${currStatus}`,
-                {
-                    'Event data': ev
-                }
-            );
-            return;
-        }
-        queue.set(ev, true);
-
-        // process queue from the start until incomplete entry is found
-        //  (this relies on the fact that Map entries are iterated in insertion order)
-        for (const [currEv, isDone] of queue) {
-            if (!isDone) break;
-            queue.delete(currEv);
-            listener.apply(thisArg, [currEv]);
-        }
-    }
-
     private static buildNewListener(origListener: WebSocketListener): WebSocketListener {
         console.info('Hooking websocket message listener');
         return function (this: WebSocket, event: MessageEvent) {
             // handle new message
             const newEvent = WebsocketHook.fixMessageEventData(event);
 
-            WebsocketHook.enqueueMessageForListener(origListener, newEvent);
-            const continueProcessing = WebsocketHook.once(() =>
-                WebsocketHook.handleMessageForListener(origListener, newEvent, this));
+            const continueProcessing = origListener.bind(this, newEvent);
 
             try {
                 // returns true if event will be handled asynchronously
