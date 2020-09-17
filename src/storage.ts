@@ -5,15 +5,14 @@ interface Option {
     resetDays?: number;
 }
 type OptionName = keyof typeof ExtStorage.options;
-// workaround for object literal key type inference
-let asOptions = <T>(o: { [K in keyof T]: Option }) => o;
 
 class ExtStorage {
     private static readonly storage = browser.storage.sync;
     private static readonly STORAGE_APPID_KEY = 'appid';
     private static readonly STORAGE_OPTIONS_KEY_PREFIX = '__option-';
 
-    static readonly options = asOptions({
+    // workaround for object literal key type inference
+    static readonly options = (<T>(o: { [K in keyof T]: Option }) => o)({
         'prefetch': {
             text: 'Prefetch step-by-step instructions',
             default: true,
@@ -120,6 +119,3 @@ class ExtStorage {
         }
     }
 }
-
-asOptions = undefined as any;
-
