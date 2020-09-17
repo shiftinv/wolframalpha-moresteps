@@ -27,10 +27,15 @@ class APIClient {
         let newStr = str;
         for (const [pattern, repl] of Object.entries(replacements)) {
             // replace everywhere that's not enclosed in double quotes
-            newStr = newStr.replace(new RegExp(`"[^"]+"|(${pattern})`, 'g'), (match, group) => {
-                // if group is defined, pattern matched; if not, left side of alternation matched
-                return group ? repl : match;
-            });
+            const escapedPattern = pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            newStr = newStr.replace(
+                new RegExp(`"[^"]+"|(${escapedPattern})`, 'g'),
+                (match, group) => {
+                    // if group is defined, pattern matched;
+                    //   otherwise, left side of alternation matched
+                    return group ? repl : match;
+                }
+            );
         }
 
         // remove quotes
