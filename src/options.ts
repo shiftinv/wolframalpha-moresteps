@@ -34,6 +34,8 @@ submitButton.addEventListener('click', async (e) => {
 // handle options checkboxes
 const optionsDiv = document.getElementById('options') as HTMLDivElement;
 const optionsMiscDiv = document.getElementById('options-misc') as HTMLDivElement;
+const reloadFuncs: (() => any)[] = [];
+
 for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, Option][]) {
     const div = document.createElement('div');
     const label = document.createElement('label');
@@ -48,14 +50,26 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
     // create checkbox
     checkbox.id = id;
     checkbox.type = 'checkbox';
-    checkbox.addEventListener('click', () => ExtStorage.setOption(key, checkbox.checked));
+    checkbox.addEventListener('click', async () => {
+        // set new value
+        await ExtStorage.setOption(key, checkbox.checked);
+        // refresh availability of other options
+        reloadFuncs.forEach(f => f());
+    });
 
     // initialize value
     checkbox.disabled = true;
-    ExtStorage.getOption(key).then((value) => {
-        checkbox.checked = value;
-        checkbox.disabled = false;
-    });
+
+    const reloadBox = () => {
+        ExtStorage.getOption(key).then((value) => {
+            checkbox.checked = value;
+        });
+        ExtStorage.isAvailable(key).then((available) => {
+            checkbox.disabled = !available;
+        });
+    };
+    reloadFuncs.push(reloadBox);
+    reloadBox();
 
     // add tooltip
     if (option.description) {

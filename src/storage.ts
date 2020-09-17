@@ -22,12 +22,12 @@ class ExtStorage {
         'consolidate': {
             text: 'Consolidate requests',
             default: true,
-            description: '[Requires \'prefetch\' option]\nAccumulates subqueries and sends them as one request.\nThis can significantly reduce the number of API calls if a result page contains multiple step-by-step blocks,\nin exchange for slightly longer step-by-step loading delays on such pages'
+            description: '[requires \'prefetch\' option]\nAccumulates subqueries and sends them as one request.\nThis can significantly reduce the number of API calls if a result page contains multiple step-by-step blocks,\nin exchange for slightly longer step-by-step loading delays on such pages'
         },
         'consolidate+async': {
             text: 'Retrieve results asynchronously',
             default: false,
-            description: '[Requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis may marginally reduce some of the delay introduced by consolidation, and does not count towards API usage'
+            description: '[requires \'consolidate\' option]\nRequests step-by-step instructions asynchronously, i.e. as soon as each one is ready instead of all at once.\nThis may marginally reduce some of the delay introduced by consolidation, and does not count towards API usage'
         },
         'includepodid': {
             text: 'Only request relevant results',
@@ -41,6 +41,26 @@ class ExtStorage {
             description: 'Automatically hides the top banner on the website'
         }
     });
+    private static dependencies: { [key in OptionName]?: OptionName[] } = {
+        'consolidate': ['prefetch'],
+        'consolidate+async': ['consolidate']
+    };
+
+    private static getDependencies(name: OptionName): OptionName[] {
+        const allDependencies: OptionName[] = [];
+        function collectRecursive(currName: OptionName) {
+            const deps = ExtStorage.dependencies[currName];
+            if (!deps) return;
+            for (const dependency of deps) {
+                if (!allDependencies.includes(dependency) && dependency !== name) {
+                    allDependencies.push(dependency);
+                    collectRecursive(dependency);
+                }
+            }
+        }
+        collectRecursive(name);
+        return allDependencies;
+    }
 
     static async getAppID(): Promise<string | undefined> {
         return this.storage.get(this.STORAGE_APPID_KEY)
@@ -53,9 +73,18 @@ class ExtStorage {
         });
     }
 
+    static async isAvailable(name: OptionName): Promise<boolean> {
+        const dependencyKeys = this.getDependencies(name).map(k => `${this.STORAGE_OPTIONS_KEY_PREFIX}${k}`);
+        return this.storage.get(dependencyKeys)
+            .then(data => Object.values(data).every(value => value !== false));
+    }
+
     static async getOption(name: OptionName): Promise<boolean> {
+        const available = await this.isAvailable(name);
+        if (!available) return false;
+
         const key = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}`;
-        return this.storage.get(key)
+        return await this.storage.get(key)
             .then(data => data[key] as boolean ?? this.options[name].default);
     }
 
