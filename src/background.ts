@@ -2,7 +2,12 @@ class APIClient {
     private static baseUrl = 'https://api.wolframalpha.com/v2/query';
     private static readonly commonParams = {
         format: 'image',
-        output: 'json'
+        output: 'json',
+        parsetimeout: '10',     // default: 5s
+        scantimeout: '10',      // default: 3s
+        podtimeout: '10',       // default: 4s
+        formattimeout: '20',    // default: 8s
+        totaltimeout: '40'      // default: 20s
     };
 
     private static asyncPodUrls: Set<string> = new Set();
