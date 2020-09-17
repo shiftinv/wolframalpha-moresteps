@@ -32,8 +32,13 @@ class ExtStorage {
         'includepodid': {
             text: 'Only request relevant results',
             default: true,
-            description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type,\ninstead of requesting everything; this significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists',
+            description: 'Uses the \'includepodid\' parameter to only request data relevant to the current result type, instead of requesting everything. This significantly improves speed, sometimes by up to 80%.\nOccasionally the API is somewhat broken and doesn\'t return anything when that parameter is used, which is why this option exists',
             resetDays: 3
+        },
+        'increasetimeout': {
+            text: 'Use larger timeout values for computations',
+            default: true,
+            description: 'Uses timeout values that are 2-3x larger than the defaults. This solves issues especially with more complicated/extensive queries, as the default timeout values used by the API are relatively low'
         },
         'misc-hidebanner': {
             text: 'Hide top banner by default',

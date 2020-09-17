@@ -2,7 +2,9 @@ class APIClient {
     private static baseUrl = 'https://api.wolframalpha.com/v2/query';
     private static readonly commonParams = {
         format: 'image',
-        output: 'json',
+        output: 'json'
+    };
+    private static readonly timeoutParams = {
         parsetimeout: '10',     // default: 5s
         scantimeout: '10',      // default: 3s
         podtimeout: '10',       // default: 4s
@@ -56,6 +58,12 @@ class APIClient {
             input: query,
             ...this.commonParams
         });
+        if (await ExtStorage.getOption('increasetimeout')) {
+            for (const [k, v] of Object.entries(this.timeoutParams)) {
+                params.append(k, v);
+            }
+        }
+
         const useIncludePodID = await ExtStorage.getOption('includepodid');
         for (const podID of podIDs) {
             params.append('podstate', `${podID}__Step-by-step solution`);
