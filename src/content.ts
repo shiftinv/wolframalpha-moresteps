@@ -1,10 +1,10 @@
 class APIHandler {
     private static stepsPromises: { [key: string]: Promise<any> } = {};
 
-    private static findStepsImg(pod: APIPodSync, podID: string) {
+    private static findStepsImg(pod: APIPodSync): APIImageData {
         const img = pod.subpods.find(s => s.title.includes('steps') && 'img' in s)?.img;
         if (!img) {
-            throw new Error(`Couldn't find step-by-step image subpod in API response for podID '${podID}'`);
+            throw new Error(`Couldn't find step-by-step image subpod in API response for podID '${pod.id}'`);
         }
         return img;
     }
@@ -29,9 +29,12 @@ class APIHandler {
                 type: 'fetchAsyncPod',
                 url: pod.async
             });
-            pod = result.pods![0] as APIPodSync;
+            if (!result.pods || result.pods.length === 0) {
+                throw new Error(`Received empty async response for podID '${pod.id}'`);
+            }
+            pod = result.pods[0] as APIPodSync;
         }
-        return this.findStepsImg(pod, podID);
+        return this.findStepsImg(pod);
     }
 
     private static getPromise(

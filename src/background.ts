@@ -45,7 +45,7 @@ class APIClient {
         if (podIDs.length === 0) {
             throw new Error('Invalid number of podIDs');
         }
-        const url = new URL(this.baseUrl);
+
         const params = new URLSearchParams({
             appid: appid,
             input: query,
@@ -56,16 +56,19 @@ class APIClient {
             params.append('podstate', `${podID}__Step-by-step solution`);
             if (useIncludePodID) params.append('includepodid', podID);
         }
-        for (const assumption of assumptions) {
-            params.append('assumption', this.encodeAssumption(assumption));
-        }
 
         const reqAsync = podIDs.length > 1 && await ExtStorage.getOption('consolidate+async');
         if (reqAsync) {
             params.append('async', 'true');
         }
 
+        for (const assumption of assumptions) {
+            params.append('assumption', this.encodeAssumption(assumption));
+        }
+
+        const url = new URL(this.baseUrl);
         url.search = params.toString();
+
 
         const response = await fetch(url.toString());
         const resultJson = (await response.json()).queryresult as APIResponse;
