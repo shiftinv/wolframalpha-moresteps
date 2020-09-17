@@ -1,6 +1,5 @@
 class ErrorHandler {
     private static readonly ALERT_CONTAINER_ID = `moresteps-alertcontainer`;
-    private static readonly ALERT_MODAL_ID = `moresteps-alertmodal`;
     private static container?: HTMLDivElement;
 
     private static getContainer(): HTMLDivElement {
@@ -23,7 +22,7 @@ class ErrorHandler {
         const modalContent = document.createElement('div');
         const closeButton = document.createElement('span');
 
-        modal.id = this.ALERT_MODAL_ID;
+        modal.classList.add('moresteps-alertmodal');
         modalContent.classList.add('modal-content');
         modalContent.textContent = text;
 
