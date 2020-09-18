@@ -3,10 +3,12 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/shiftinv/wolframalpha-moresteps?label=version)](https://github.com/shiftinv/wolframalpha-moresteps/releases/latest)
 [![GitHub](https://img.shields.io/github/license/shiftinv/wolframalpha-moresteps)](https://github.com/shiftinv/wolframalpha-moresteps/blob/master/LICENSE)
 
+Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the official API
+
+
+## Install
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/opbkalbiecmdhkmijbiojepkjahdecfh)](https://chrome.google.com/webstore/detail/opbkalbiecmdhkmijbiojepkjahdecfh)
 [![Mozilla Add-on](https://img.shields.io/amo/v/wolframalpha-moresteps)](https://addons.mozilla.org/en-US/firefox/addon/wolframalpha-moresteps/)
-
-Browser extension that automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the official API
 
 
 ## Setup
