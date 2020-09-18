@@ -78,9 +78,12 @@ class ExtStorage {
     }
 
     static async isAvailable(name: OptionName): Promise<boolean> {
-        const dependencyKeys = this.getDependencies(name).map(k => `${this.STORAGE_OPTIONS_KEY_PREFIX}${k}`);
+        const dependencies = this.getDependencies(name);
+        const dependencyKeys = dependencies.map(k => `${this.STORAGE_OPTIONS_KEY_PREFIX}${k}`);
         return this.storage.get(dependencyKeys)
-            .then(data => Object.values(data).every(value => value !== false));
+            .then(data => dependencyKeys.every((dependencyKey, index) => {
+                return (data[dependencyKey] ?? this.options[dependencies[index]].default) === true;
+            }));
     }
 
     static async getOption(name: OptionName): Promise<boolean> {
