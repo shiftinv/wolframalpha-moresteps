@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Wolfram|Alpha MoreSteps",
     "description": "Automatically replaces partial step-by-step solutions on Wolfram|Alpha with complete solutions from the official API",
-    "version": "1.0.2.0",
+    "version": "1.1.0.0",
     "icons": {
         "48": "icons/icon48.png",
         "96": "icons/icon96.png",
