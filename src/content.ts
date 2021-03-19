@@ -115,6 +115,15 @@ class Messaging {
         return browser.runtime.sendMessage(args);
     }
 
+    static handleError(err: any): void {
+        ErrorHandler.processError(
+            `API processing failed:\n${err}`,
+            {
+                Error: err
+            }
+        );
+    }
+
     static init() {
         // handle requests from page script
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -123,11 +132,10 @@ class Messaging {
 
             switch (event.data.type) {
             case 'msImageDataPrefetch': {
-                // TODO: handle errors
                 const args = event.data as StepByStepPrefetchMessage['in'];
-                // don't really care about results, any errors will be sent back later on
-                //  as the promises (and therefore results/errors) are cached
-                void (async () => {
+                // don't really care about results,
+                //  as the promises (and therefore results) are cached
+                try {
                     const prefetch = await ExtStorage.getOption('prefetch');
                     if (!prefetch) return;
 
@@ -144,7 +152,9 @@ class Messaging {
                             (podID) => APIHandler.getOne(args.query, podID, args.assumptions)
                         ));
                     }
-                })();
+                } catch (e) {
+                    this.handleError(e);
+                }
                 break;
             }
             case 'msImageDataReq': {
@@ -154,13 +164,8 @@ class Messaging {
                 let imageData: StepByStepContentMessage['out'] = null;
                 try {
                     imageData = await APIHandler.getOne(args.query, args.podID, args.assumptions);
-                } catch (err) {
-                    ErrorHandler.processError(
-                        `API processing failed:\n${err}`,
-                        {
-                            Error: err
-                        }
-                    );
+                } catch (e) {
+                    this.handleError(e);
                 }
 
                 // send response
