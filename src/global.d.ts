@@ -40,28 +40,28 @@ interface ExtMessage<I extends { type: string, [key: string]: any }, O> {
 }
 
 // content script ---> background script (main)
-interface StepByStepBackgroundMessage extends ExtMessage<
+type StepByStepBackgroundMessage = ExtMessage<
     { type: 'fetchSteps' } & QueryDataMulti,
     APIResponse
-> {}
+>;
 
 // content script ---> background script (async pods)
-interface StepByStepAsyncPodMessage extends ExtMessage<
+type StepByStepAsyncPodMessage = ExtMessage<
     {
         type: 'fetchAsyncPod',
         url: string
     },
     APIResponseAsync
-> {}
+>;
 
 // page script ---> content script (prefetch)
-interface StepByStepPrefetchMessage extends ExtMessage<
+type StepByStepPrefetchMessage = ExtMessage<
     { type: 'msImageDataPrefetch' } & QueryDataMulti,
     void
-> {}
+>;
 
 // page script ---> content script (single)
-interface StepByStepContentMessage extends ExtMessage<
+type StepByStepContentMessage = ExtMessage<
     { type: 'msImageDataReq' } & QueryData,
     APIImageData | null
-> {}
+>;

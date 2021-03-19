@@ -5,15 +5,6 @@ class WebsocketHook {
     private static currentAssumptions: string[] = [];
     static newImages = new Set<string>();
 
-    private static once<A extends any[], R, T>(func: (this: T, ...arg: A) => R):
-            ((this: T, ...arg: A) => R) {
-        let done = false;
-        let val: R;
-        return function (this: T, ...args: A) {
-            return done ? val : ((done = true), (val = func.apply(this, args)));
-        };
-    }
-
     private static fixMessageEventData(o: MessageEvent): MessageEventRW {
         const tmpData = o.data;
         Object.defineProperty(o, 'data', { writable: true });
@@ -26,7 +17,7 @@ class WebsocketHook {
             return JSON.parse(jsonStr);
         } catch (err) {
             ErrorHandler.processError(
-                `Error parsing WebSocket json`,
+                'Error parsing WebSocket json',
                 {
                     'Error': err,
                     'JSON string': jsonStr
@@ -36,8 +27,9 @@ class WebsocketHook {
         }
     }
 
-    private static websocketMessageEventHook(event: MessageEventRW, continueProcessing: () => any):
-            boolean {
+    private static websocketMessageEventHook(
+        event: MessageEventRW, continueProcessing: () => any
+    ): boolean {
         let obj: any;
         try {
             obj = this.tryParseJSON(event.data);
@@ -46,7 +38,7 @@ class WebsocketHook {
         }
 
         switch (obj.type) {
-        case 'pods':
+        case 'pods': {
             // collect pods with stepbystep subpods
             const podIDs: string[] = [];
             for (const pod of obj.pods) {
@@ -58,7 +50,7 @@ class WebsocketHook {
 
             // prefetch
             if (podIDs.length > 0) {
-                Messaging.sendMessage<StepByStepPrefetchMessage>({
+                void Messaging.sendMessage<StepByStepPrefetchMessage>({
                     type: 'msImageDataPrefetch',
                     query: obj.input,
                     podIDs: podIDs,
@@ -66,14 +58,15 @@ class WebsocketHook {
                 });
             }
             return false;
+        }
 
-        case 'stepByStep':
+        case 'stepByStep': {
             // don't try to replace solutions with multiple steps
             if ('deploybuttonstates' in obj.pod
                 || 'stepbystepcontenttype' in obj.pod.subpods[0]) return false;
 
             // request image data from content script
-            Messaging.sendMessage<StepByStepContentMessage>({
+            void Messaging.sendMessage<StepByStepContentMessage>({
                 type: 'msImageDataReq',
                 query: obj.query,
                 podID: obj.pod.id,
@@ -106,6 +99,7 @@ class WebsocketHook {
             });
 
             return true;
+        }
 
         default:
             return false;
@@ -130,12 +124,12 @@ class WebsocketHook {
         const assumptions = obj.assumption;
         if (!Array.isArray(assumptions) || assumptions.length === 0) return;
         this.currentAssumptions = assumptions;
-        console.info(`Got query assumptions: `, assumptions);
+        console.info('Got query assumptions: ', assumptions);
     }
 
     private static buildNewListener(origListener: WebSocketListener): WebSocketListener {
         console.info('Hooking websocket message listener');
-        return function (this: WebSocket, event: MessageEvent) {
+        return function listener(this: WebSocket, event: MessageEvent) {
             // handle new message
             const newEvent = WebsocketHook.fixMessageEventData(event);
 
@@ -150,8 +144,8 @@ class WebsocketHook {
                 ErrorHandler.processError(
                     `Error in websocket message hook:\n${e}`,
                     {
-                        'Error': e,
-                        'Event': newEvent
+                        Error: e,
+                        Event: newEvent
                     }
                 );
                 continueProcessing();
@@ -162,21 +156,25 @@ class WebsocketHook {
     static init() {
         console.info('Initializing websocket hook');
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const origAddEventListener = window.WebSocket.prototype.addEventListener;
-        window.WebSocket.prototype.addEventListener =
-            function (type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]) {
-                const newListener = type === 'message'
-                    ? WebsocketHook.buildNewListener(listener)  // hook listener
-                    : listener;
-                return origAddEventListener.apply(this, [type, newListener, ...args] as any);
-            };
+        window.WebSocket.prototype.addEventListener = function event(
+            type: string, listener: (this: WebSocket, ev: any) => any, ...args: any[]
+        ) {
+            const newListener = type === 'message'
+                ? WebsocketHook.buildNewListener(listener)  // hook listener
+                : listener;
+            return origAddEventListener.apply(this, [type, newListener, ...args] as any);
+        };
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         const origSend = window.WebSocket.prototype.send;
-        window.WebSocket.prototype.send =
-            function (data: any): void {
-                WebsocketHook.webSocketSendHook(data);
-                return origSend.apply(this, [data]);
-            };
+        window.WebSocket.prototype.send = function send(
+            data: any
+        ): void {
+            WebsocketHook.webSocketSendHook(data);
+            return origSend.apply(this, [data]);
+        };
     }
 }
 
@@ -199,8 +197,9 @@ class Messaging {
     }
 
     static async sendMessage<T extends ExtMessage<any, any>>(args: T['in']): Promise<T['out']> {
-        const seq = this.sequence++;
-        const promise = new Promise(resolve => this.dataCallbacks[seq] = resolve);
+        const seq = this.sequence;
+        this.sequence += 1;
+        const promise = new Promise((resolve) => { this.dataCallbacks[seq] = resolve; });
         window.postMessage(
             { seq: seq, ...args },
             '*'
@@ -232,10 +231,10 @@ class Observer {
     }
 
     private static observerCallback(el: Element) {
-        const isStepByStep = (e: Element | null): boolean => {
+        const isStepByStep = (e: Element | null): boolean => (
             // check if node is step-by-step block based on presence of a header image
-            return !!(e && e.querySelector('img[alt="SBS_HEADER"]'));
-        };
+            !!(e && e.querySelector('img[alt="SBS_HEADER"]'))
+        );
 
         // container layout:
         //   <section>      [1]
@@ -257,13 +256,16 @@ class Observer {
             // if node itself is the SBS section, call function on the div children
             if (!isStepByStep(el)) break;
             [...el.children]
-                .filter(c => c.nodeName.toLowerCase() === 'div')
-                .forEach(c => this.fixSectionForDiv(c));
+                .filter((c) => c.nodeName.toLowerCase() === 'div')
+                .forEach((c) => this.fixSectionForDiv(c));
             break;
 
         case 'div':
             if (!isStepByStep(el.parentElement)) break;
             this.fixSectionForDiv(el);
+            break;
+
+        default:
             break;
         }
     }

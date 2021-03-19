@@ -4,6 +4,7 @@ const statusText = document.querySelector('#status') as HTMLSpanElement;
 
 const placeholder = '**********';
 
+/* eslint-disable @typescript-eslint/no-misused-promises */
 
 // show placeholder if AppID is already set
 document.addEventListener('DOMContentLoaded', async () => {
@@ -36,6 +37,7 @@ const optionsDiv = document.getElementById('options') as HTMLDivElement;
 const optionsMiscDiv = document.getElementById('options-misc') as HTMLDivElement;
 const reloadFuncs: (() => any)[] = [];
 
+/* eslint-disable @typescript-eslint/no-loop-func */
 for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, Option][]) {
     const div = document.createElement('div');
     const label = document.createElement('label');
@@ -54,17 +56,17 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
         // set new value
         await ExtStorage.setOption(key, checkbox.checked);
         // refresh availability of other options
-        reloadFuncs.forEach(f => f());
+        reloadFuncs.forEach((f) => f());
     });
 
     // initialize value
     checkbox.disabled = true;
 
     const reloadBox = () => {
-        ExtStorage.getOption(key).then((value) => {
+        void ExtStorage.getOption(key).then((value) => {
             checkbox.checked = value;
         });
-        ExtStorage.isAvailable(key).then((available) => {
+        void ExtStorage.isAvailable(key).then((available) => {
             checkbox.disabled = !available;
         });
     };
@@ -88,3 +90,5 @@ for (const [key, option] of Object.entries(ExtStorage.options) as [OptionName, O
     const targetDiv = key.startsWith('misc-') ? optionsMiscDiv : optionsDiv;
     targetDiv.appendChild(div);
 }
+/* eslint-enable @typescript-eslint/no-misused-promises */
+/* eslint-enable @typescript-eslint/no-loop-func */

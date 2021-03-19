@@ -2,7 +2,7 @@ class APIHandler {
     private static stepsPromises: { [key: string]: Promise<any> } = {};
 
     private static findStepsImg(pod: APIPodSync): APIImageData {
-        const img = pod.subpods.find(s => s.title.includes('steps') && 'img' in s)?.img;
+        const img = pod.subpods.find((s) => s.title.includes('steps') && 'img' in s)?.img;
         if (!img) {
             throw new Error(`Couldn't find step-by-step image subpod in API response for podID '${pod.id}'`);
         }
@@ -10,16 +10,16 @@ class APIHandler {
     }
 
     private static async handleResponse(json: APIResponse, podID: string): Promise<APIImageData> {
-        const pods = json.pods;
+        const { pods } = json;
         if (!pods) {
             // this can sometimes happen when the includepodid/excludepodid parameters are broken;
             //  there's nothing one can do about it, apart from waiting for the API to get fixed :/
-            throw new Error(`Response for pod ID \'${podID}\' didn't contain any result pods`
-                + `\nTry temporarily disabling the "${ExtStorage.options['includepodid'].text}" option`);
+            throw new Error(`Response for pod ID '${podID}' didn't contain any result pods`
+                + `\nTry temporarily disabling the "${ExtStorage.options.includepodid.text}" option`);
         }
-        let pod = pods.find(p => p.id === podID) as APIPod | undefined;
+        let pod = pods.find((p) => p.id === podID);
         if (!pod) {
-            throw new Error(`Couldn't find pod ID \'${podID}\' in API response`);
+            throw new Error(`Couldn't find pod ID '${podID}' in API response`);
         }
 
         const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
@@ -45,8 +45,8 @@ class APIHandler {
     ): Promise<APIImageData> {
         const cacheKey = `${query}:::${podID}:::${assumptions}`;
         const prev = this.stepsPromises[cacheKey];
-        if (prev) {
-            console.debug(`Found existing promise for query \'${query}\' (podID: \'${podID}\')`);
+        if (prev !== undefined) {
+            console.debug(`Found existing promise for query '${query}' (podID: '${podID}')`);
             return prev;
         }
 
@@ -55,8 +55,9 @@ class APIHandler {
         return p;
     }
 
-    static getMultiple(query: string, podIDs: string[], assumptions: string[]):
-            Promise<APIImageData>[] {
+    static getMultiple(
+        query: string, podIDs: string[], assumptions: string[]
+    ): Promise<APIImageData>[] {
         // array of promises, returned to caller
         const promises: Promise<APIImageData>[] = [];
         // used for resolving the promises, {podID: [resolve, reject]}
@@ -77,19 +78,19 @@ class APIHandler {
         // if length === 0, everything is already cached/in progress
         if (requestPodIDs.length > 0) {
             // send message to background script
-            console.log(`Retrieving data for query \'${query}\' (podIDs: ${requestPodIDs})`);
+            console.log(`Retrieving data for query '${query}' (podIDs: ${requestPodIDs})`);
             Messaging.sendMessage<StepByStepBackgroundMessage>({
                 type: 'fetchSteps',
                 query: query,
                 podIDs: requestPodIDs,
                 assumptions: assumptions
             }).then((json) => {
-                console.debug(`Received data for query: \'${query}\' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
+                console.debug(`Received data for query: '${query}' (podIDs: ${requestPodIDs}):\n${JSON.stringify(json)}`);
                 // try finding image subpod for each podID individually
                 for (const [podID, [resolve, reject]] of Object.entries(subQueries)) {
                     try {
                         this.handleResponse(json, podID)
-                            .then(imgData => resolve({ ...imgData, host: json.host }))
+                            .then((imgData) => resolve({ ...imgData, host: json.host }))
                             .catch(reject);
                     } catch (e) {
                         reject(e);
@@ -97,7 +98,7 @@ class APIHandler {
                 }
             }).catch((err) => {
                 // reject all promises if message error occurred
-                Object.values(subQueries).map(s => s[1]).forEach(reject => reject(err));
+                Object.values(subQueries).map((s) => s[1]).forEach((reject) => reject(err));
             });
         }
 
@@ -116,15 +117,17 @@ class Messaging {
 
     static init() {
         // handle requests from page script
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         window.addEventListener('message', async (event) => {
             if (event.source !== window) return;
 
             switch (event.data.type) {
             case 'msImageDataPrefetch': {
+                // TODO: handle errors
                 const args = event.data as StepByStepPrefetchMessage['in'];
                 // don't really care about results, any errors will be sent back later on
                 //  as the promises (and therefore results/errors) are cached
-                (async () => {
+                void (async () => {
                     const prefetch = await ExtStorage.getOption('prefetch');
                     if (!prefetch) return;
 
@@ -132,12 +135,14 @@ class Messaging {
                     const consolidate = await ExtStorage.getOption('consolidate');
                     if (consolidate) {
                         // send as one request
-                        APIHandler.getMultiple(args.query, args.podIDs, args.assumptions);
+                        await Promise.all(
+                            APIHandler.getMultiple(args.query, args.podIDs, args.assumptions)
+                        );
                     } else {
                         // send as multiple requests
-                        for (const podID of args.podIDs) {
-                            APIHandler.getOne(args.query, podID, args.assumptions);
-                        }
+                        await Promise.all(args.podIDs.map(
+                            (podID) => APIHandler.getOne(args.query, podID, args.assumptions)
+                        ));
                     }
                 })();
                 break;
@@ -153,7 +158,7 @@ class Messaging {
                     ErrorHandler.processError(
                         `API processing failed:\n${err}`,
                         {
-                            'Error': err
+                            Error: err
                         }
                     );
                 }
@@ -165,6 +170,9 @@ class Messaging {
                 );
                 break;
             }
+
+            default:
+                break;
             }
         });
     }
@@ -179,7 +187,7 @@ function injectScript(path: string) {
 }
 
 
-const version = browser.runtime.getManifest().version;
+const { version } = browser.runtime.getManifest();
 console.info(`Initializing Wolfram|Alpha MoreSteps v${version}`);
 
 // initialize handler for messages from page script
@@ -195,6 +203,8 @@ ExtStorage.getOption('misc-hidebanner').then((hide) => {
     if (hide) {
         sessionStorage.setItem('banner', 'true');
     }
+}).catch((err) => {
+    ErrorHandler.processError(`Couldn't load banner option:${err}`, { Error: err });
 });
 
 export {};

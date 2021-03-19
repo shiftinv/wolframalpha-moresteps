@@ -68,7 +68,7 @@ class ExtStorage {
 
     static async getAppID(): Promise<string | undefined> {
         return this.storage.get(this.STORAGE_APPID_KEY)
-            .then(data => data[this.STORAGE_APPID_KEY] as string | undefined);
+            .then((data) => data[this.STORAGE_APPID_KEY] as string | undefined);
     }
 
     static async setAppID(id: string | undefined): Promise<void> {
@@ -79,11 +79,13 @@ class ExtStorage {
 
     static async isAvailable(name: OptionName): Promise<boolean> {
         const dependencies = this.getDependencies(name);
-        const dependencyKeys = dependencies.map(k => `${this.STORAGE_OPTIONS_KEY_PREFIX}${k}`);
+        const dependencyKeys = dependencies.map((k) => `${this.STORAGE_OPTIONS_KEY_PREFIX}${k}`);
         return this.storage.get(dependencyKeys)
-            .then(data => dependencyKeys.every((dependencyKey, index) => {
-                return (data[dependencyKey] ?? this.options[dependencies[index]].default) === true;
-            }));
+            .then((data) => dependencyKeys.every(
+                (dependencyKey, index) => (
+                    (data[dependencyKey] ?? this.options[dependencies[index]].default) === true
+                )
+            ));
     }
 
     static async getOption(name: OptionName): Promise<boolean> {
@@ -92,31 +94,33 @@ class ExtStorage {
 
         const key = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}`;
         return await this.storage.get(key)
-            .then(data => data[key] as boolean ?? this.options[name].default);
+            .then((data) => data[key] as boolean ?? this.options[name].default);
     }
 
     static async setOption(name: OptionName, value: boolean): Promise<void> {
         const key = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}`;
         const changeTimeKey = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}__changeTime`;
         return this.storage.set({
-            [key]: value as any,
+            [key]: value,
             [changeTimeKey]: Date.now()
         });
     }
 
     static async checkResets(): Promise<void> {
         const resetOptions = (Object.entries(this.options) as [OptionName, Option][])
-            .filter(([name, meta]) => meta.resetDays !== undefined);
+            .filter(([, meta]) => meta.resetDays !== undefined);
         const now = Date.now();
         for (const [name, meta] of resetOptions) {
             const changeTimeKey = `${this.STORAGE_OPTIONS_KEY_PREFIX}${name}__changeTime`;
+            // eslint-disable-next-line no-await-in-loop
             const changeTime = (await this.storage.get(changeTimeKey))[changeTimeKey] as
                 number | undefined;
             if (!changeTime) continue;
 
             const diff = Math.floor((now - changeTime) / (24 * 60 * 60 * 1000));
             if (diff >= meta.resetDays!) {
-                console.log(`Resetting option \'${name}\' to default value \'${meta.default}\'`);
+                console.log(`Resetting option '${name}' to default value '${meta.default}'`);
+                // eslint-disable-next-line no-await-in-loop
                 await this.setOption(name, meta.default);
             }
         }

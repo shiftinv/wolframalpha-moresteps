@@ -1,5 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ErrorHandler {
-    private static readonly ALERT_CONTAINER_ID = `moresteps-alertcontainer`;
+    private static readonly ALERT_CONTAINER_ID = 'moresteps-alertcontainer';
     private static container?: HTMLDivElement;
 
     private static getContainer(): HTMLDivElement {
@@ -55,7 +56,7 @@ class ErrorHandler {
         const args = [text];
         if (Object.keys(context).length !== 0) {
             args.push('\nContext:');
-            Object.keys(context).forEach(k => args.push(`\n\n> ${k}:\n`, context[k]));
+            Object.keys(context).forEach((k) => args.push(`\n\n> ${k}:\n`, context[k]));
         }
         console.error(...args);
 

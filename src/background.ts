@@ -29,14 +29,14 @@ class APIClient {
         let newStr = str;
         for (const [pattern, repl] of Object.entries(replacements)) {
             // replace everywhere that's not enclosed in double quotes
-            const escapedPattern = pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const escapedPattern = pattern.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
             newStr = newStr.replace(
                 new RegExp(`"[^"]+"|(${escapedPattern})`, 'g'),
-                (match, group) => {
+                (match, group) => (
                     // if group is defined, pattern matched;
                     //   otherwise, left side of alternation matched
-                    return group ? repl : match;
-                }
+                    group ? repl : match
+                )
             );
         }
 
@@ -95,7 +95,7 @@ class APIClient {
         // store async pod urls for subsequent verification
         if (reqAsync) {
             const isAsync = (p: APIPod): p is APIPodAsync => 'async' in p;
-            resultJson.pods?.filter(isAsync).forEach(p => this.asyncPodUrls.add(p.async));
+            resultJson.pods?.filter(isAsync).forEach((p) => this.asyncPodUrls.add(p.async));
         }
 
         return resultJson;
@@ -105,7 +105,7 @@ class APIClient {
         // messages from the content script are not trusted, only send requests to
         //  previously seen urls to prevent access to arbitrary urls
         if (!this.asyncPodUrls.has(url)) {
-            throw new Error(`Refusing to request unknown url \'${url}\'`);
+            throw new Error(`Refusing to request unknown url '${url}'`);
         }
 
         const reqUrl = new URL(url);
@@ -118,9 +118,12 @@ class APIClient {
     }
 }
 
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 class Messaging {
-    private static contentMessageHandler(message: any, sender: any):
-            Promise<any> | undefined {
+    private static contentMessageHandler(
+        message: any, sender: any
+    ): Promise<any> | undefined {
+        void sender;
         switch (message.type) {
         case 'fetchSteps': {
             const args = message as StepByStepBackgroundMessage['in'];
@@ -137,6 +140,8 @@ class Messaging {
             const args = message as StepByStepAsyncPodMessage['in'];
             return APIClient.getAsyncPod(args.url) as Promise<StepByStepAsyncPodMessage['out']>;
         }
+        default:
+            return undefined;
         }
     }
 
@@ -145,10 +150,11 @@ class Messaging {
         browser.runtime.onMessage.addListener(this.contentMessageHandler.bind(this));
     }
 }
+/* eslint-enable @typescript-eslint/no-unnecessary-type-assertion */
 
 Messaging.init();
 
-ExtStorage.checkResets();
+void ExtStorage.checkResets();
 
 
 export {};
